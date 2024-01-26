@@ -1,0 +1,22 @@
+{
+  "name": "do_we_all_think_the_same",
+  "version": "0.0.1",
+  "description": "Server side for doweallthinkthesame.com",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Squarific/doweallthinkthesame.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Squarific/doweallthinkthesame/issues"
+  },
+  "homepage": "https://github.com/Squarific/doweallthinkthesame#readme",
+  "dependencies": {
+    "ws": "^7.4.0"
+  }
+}

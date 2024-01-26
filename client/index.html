@@ -1,0 +1,8 @@
+<script>
+    webSocket = new WebSocket("ws://localhost:8080");
+    webSocket.onerror = (event) => { console.log("error", event); }
+    webSocket.onopen = (event) => {
+        console.log("open", event);
+        webSocket.send("test");
+    }
+</script>
