@@ -1,20 +1,21 @@
 <span class="player bigtext">Not connected</span>
 
-<div class="shop">
-</div>
+
+<div class="public public-left"></div>
+<div class="public public-right"></div>
+<div class="public public-top"></div>
+<div class="shop"></div>
+<div class="public public-our"></div>
 
 <span class="laughs bigtext">0 laughs</span>
 
-<div class="public">
-    
-</div>
 
 <style>
     .shop {
         display:block;
         width:510px;
         background:lightblue;
-        margin:auto;
+        margin-left:200px;
     }
     
     .shop button {
@@ -34,16 +35,36 @@
 
     .public {
         width:500px;
-        margin:auto;
-        margin-top:1em;
+        margin-top:25px;
         border:1px solid black;
+    }
+
+    .public-top {
+        margin-left:205px;
+    }
+
+    .public-our {
+        margin-left:205px;
+    }
+
+    .public-left {
+        position:fixed;
+        transform: translate(-115px, 310px) rotate(90deg)
+    }
+
+    .public-right {
+        position:fixed;
+        transform: translate(520px, 310px) rotate(-90deg)
+    }
+
+    .public-top {
+        margin-bottom:25px;
     }
 
     .public > div {
         display:inline-block;
-        width:8px;
-        height:8px;
-        border:0px solid black;
+        width:10px;
+        height:10px;
     }
 
     .bigtext {
@@ -63,6 +84,11 @@
     webSocket.onerror = (event) => { console.log("error", event); }
     webSocket.onopen = (event) => { console.log("open", event); }
 
+    const LEFT = 1;
+    const RIGHT = 2;
+    const TOP = 3;
+    const MAX_PLAYERS = 4;
+
     let state;
     let created = false;
     let shopElements = [];
@@ -79,14 +105,27 @@
 
         if (!created) {
             createShop();
-            createPublic();
+            createPublics();
             created = true;
         }
 
         updatePlayer();
         updateShop();
-        updatePublic();
+        updatePublics();
         updateMoney();
+    }
+
+    function playerIDLeft () {
+        return (ourid + LEFT) % MAX_PLAYERS;
+    }
+
+    function playerIDRight () {
+        return (ourid + RIGHT) % MAX_PLAYERS;
+
+    }
+
+    function playerIDTop () {
+        return (ourid + TOP) % MAX_PLAYERS;
     }
 
     function createShop () {
@@ -125,28 +164,42 @@
         }
     }
 
-    function createPublic () {
-        var public_container = document.querySelector(".public");
+    function createPublics () {
+        var public_container_our = document.querySelector(".public-our");
+        var public_container_left = document.querySelector(".public-left");
+        var public_container_top = document.querySelector(".public-top");
+        var public_container_right = document.querySelector(".public-right");
+
+        for (var j = 0; j < MAX_PLAYERS; j++) publicElements.push([]);
 
         for (var k = 0; k < publicCount; k++) {
-            publicElements[k] = public_container.appendChild(document.createElement("div"));
+            publicElements[ourid][k] = public_container_our.appendChild(document.createElement("div"));
+            publicElements[playerIDLeft()][k] = public_container_left.appendChild(document.createElement("div"));
+            publicElements[playerIDRight()][k] = public_container_top.appendChild(document.createElement("div"));
+            publicElements[playerIDTop()][k] = public_container_right.appendChild(document.createElement("div"));
         }
     }
 
-    function updatePublic () {
-        var i = 0;
-
-        if (!state.inventories[ourid]) return;
-
+    function updatePublic (playerid) {
+        var sum = 0;
         // Go trough the audience types
-        for (var k = 0; k < state.inventories[ourid].length; k++) {
+        for (var k = 0; k < state.inventories[playerid].length; k++) {
 
             // For every person in this audience type, set one of the blocks
-            for (var j = 0; j < state.inventories[ourid][k]; j++) {
-                publicElements[i].style.backgroundColor = state.shop[k].color;
-                i++;
+            for (var j = 0; j < state.inventories[playerid][k]; j++) {
+                if (sum >= publicElements[playerid].length) return;
+                publicElements[playerid][sum].style.backgroundColor = state.shop[k].color;
+                sum++;
             }
         }
+    }
+
+    function updatePublics () {
+        for (var j = 0; j < MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
+        updatePublic(ourid);
+        updatePublic(playerIDLeft());
+        updatePublic(playerIDRight());
+        updatePublic(playerIDTop());
     }
 
     function updateMoney () {
