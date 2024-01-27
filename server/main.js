@@ -17,32 +17,28 @@ var CRITIC = 9;
 
 const ELITE_CONVERSION = [{
   type: TIKTOKKER,
-  reward: 5
-}, {
-  type: GAMER,
-  reward: 10
-}, {
-  type: ARTIST,
-  reward: 20
+  reward: 30
 }];
 
 var state = {
   MAX_PLAYERS: 4,
-  MAX_AUDIENCE: 500,
-  MAX_PUNKS: 100,
+  MAX_AUDIENCE: 400,
+  MAX_PUNKS: 500,
+  MAX_FREE_JOCKS: 200,
+  QUEER_LOWEST_PRICE: 20,
   LAUGHS_PER_PUNK: 3,
   punks_bought: 0,
   currentTick: 0,
   shop: [
     { name: "Normie",      cost: 0,    amount: 1, color: "gray"    },
-    { name: "Tiktokker",   cost: 1,    amount: 1, color: "#cd4c6f" },
+    { name: "Tiktokker",   cost: 1,    amount: 4, color: "#cd4c6f" },
     { name: "Gamer",       cost: 3,    amount: 1, color: "#eb48ef" },
     { name: "Artist",      cost: 9,    amount: 1, color: "#4c4fcd" },
-    { name: "Punk",        cost: 100,  amount: 1, color: "#4f4f4f" },
-    { name: "Jock",        cost: 300,  amount: 1, color: "#4ccd6f" },
-    { name: "Queer",       cost: 900,  amount: 1, color: "#4cc0cd" },
+    { name: "Punk",        cost: 20,  amount: 1, color: "#4f4f4f" },
+    { name: "Jock",        cost: 20,  amount: 1, color: "#4ccd6f" },
+    { name: "Queer",       cost: 100,  amount: 1, color: "#4cc0cd" },
     { name: "Philosopher", cost: 1000, amount: 1, color: "#521b65" },
-    { name: "Elite",       cost: 3000, amount: 1, color: "#cd834c" },
+    { name: "Elite",       cost: 1000, amount: 1, color: "#cd834c" },
     { name: "Critic",      cost: 9000, amount: 5, color: "#d3c749" }
   ],
   inventories: [],
@@ -113,7 +109,7 @@ function processBuyRequests () {
       var cost = state.shop[audienceType].cost;
 
       if (audienceType == QUEER) {
-        cost -= countAudienceType(socketid, QUEER);
+        cost -= Math.min(countAudienceType(socketid, QUEER), state.QUEER_LOWEST_PRICE);
       }
 
       state.laughs[socketid] -= cost;
@@ -128,7 +124,7 @@ function countAudienceType (socketid, type) {
   var sum = 0;
 
   for (var k = 0; k < state.inventories[socketid].length; k++) {
-    if (state.inventories[socketid].type != type) continue;
+    if (state.inventories[socketid][k].type != type) continue;
     sum += state.inventories[socketid][k].amount;
   }
 
@@ -173,14 +169,12 @@ function tiktokkers () {
 }
 
 function increaseShop () {
-  state.shop[TIKTOKKER].amount++;
+  state.shop[TIKTOKKER].amount += 4;
   state.shop[GAMER].amount++;
   state.shop[ARTIST].amount++;
   state.shop[QUEER].amount++;
   state.shop[JOCK].amount++;
   state.shop[PUNK].amount++;
-
-  state.shop[JOCK].amount = Math.min(state.shop[JOCK].amount, 10);
   state.shop[PUNK].amount = Math.min(state.shop[PUNK].amount, state.MAX_PUNKS - state.punks_bought);
   state.shop[PHILOSOPHER].amount = 1;
   state.shop[ELITE].amount = 1;
@@ -208,8 +202,9 @@ function sendState () {
 function jocks () {
   if (state.currentTick % 5 == 0) {
     for (var socketid = 0; socketid < state.inventories.length; socketid++) {
-      var jockcount = countAudienceType(socketid, JOCK);
-      if (jockcount != 0) addAudience(socketid, JOCK, jockcount);
+      var toAdd = countAudienceType(socketid, JOCK);
+      if (toAdd + toAdd > state.MAX_FREE_JOCKS) toAdd = Math.max(state.MAX_FREE_JOCKS - toAdd, 0);
+      if (toAdd != 0) addAudience(socketid, JOCK, toAdd);
     }
   }
 }
@@ -229,66 +224,36 @@ function elites () {
   }
 }
 
+function unmapInventory (socketid) {
+  var seats = [];
+
+  for (var k = 0; k < state.inventories[socketid].length; k++) {
+    for (var j = 0; j < state.inventories[socketid][k].amount; j++) {
+      seats.push(state.inventories[socketid][k].type);
+    }
+  }
+
+  return seats;
+}
+
 function philosophers () {
   for (var socketid = 0; socketid < state.inventories.length; socketid++) {
-    for (var k = 0; k < state.inventories[socketid].length; k++) {
-      if (state.inventories[socketid][k].type == PHILOSOPHER) {
-        var placesBefore = [];
-        var placesAfter = [];
-        
-        if (k >= 4) {
-          for (var i = 0; i < Math.min(state.inventories[socketid][k - 4].amount, 1); i++) {
-            placesBefore.push(state.inventories[socketid][k - 4]);
-          }
-        }
-
-        if (k >= 3) {
-          for (var i = 0; i < Math.min(state.inventories[socketid][k - 3].amount, 2); i++) {
-            placesBefore.push(state.inventories[socketid][k - 3]).type;
-          }
-        }
-        
-        if (k >= 2) {
-          for (var i = 0; i < Math.min(state.inventories[socketid][k - 2].amount, 3); i++) {
-            placesBefore.push(state.inventories[socketid][k - 2].type);
-          }
-        }
-        
-        if (k >= 1) {
-          for (var i = 0; i < Math.min(state.inventories[socketid][k - 1].amount, 4); i++) {
-            placesBefore.push(state.inventories[socketid][k - 1].type);
-          }
-        }
-
-        for (var i = 0; i < Math.min(state.inventories[socketid][k + 1].amount, 4); i++) {
-          placesAfter.push(state.inventories[socketid][k + 1]);
-        }
-
-        for (var i = 0; i < Math.min(state.inventories[socketid][k + 2].amount, 3); i++) {
-          placesAfter.push(state.inventories[socketid][k + 2]).type;
-        }
-        
-        for (var i = 0; i < Math.min(state.inventories[socketid][k + 3].amount, 2); i++) {
-          placesAfter.push(state.inventories[socketid][k + 3].type);
-        }
-        
-        for (var i = 0; i < Math.min(state.inventories[socketid][k + 4].amount, 1); i++) {
-          placesAfter.push(state.inventories[socketid][k + 4].type);
-        }
-
-
-        var used = [];
-        for (var i = 1; placesBefore.length - i >= 0; i--) {
-          used[placesBefore[i].type] = true;
-        }
-        
-        for (var i = 0; i < placesAfter.length && i < 4; i++) {
-          used[placesAfter[i].type] = true;
-        }
+    var seats = unmapInventory(socketid);
+    for (var i = 0; i < seats.length; i++) {
+      if (seats[i] == PHILOSOPHER) {
+        var audienceByType = [];
+        if (i >= 4) audienceByType[seats[i - 4]] = true;
+        if (i >= 3) audienceByType[seats[i - 3]] = true;
+        if (i >= 2) audienceByType[seats[i - 2]] = true;
+        if (i >= 1) audienceByType[seats[i - 1]] = true;
+        if (i + 1 < seats.length) audienceByType[seats[i + 1]] = true;
+        if (i + 2 < seats.length) audienceByType[seats[i + 2]] = true;
+        if (i + 3 < seats.length) audienceByType[seats[i + 3]] = true;
+        if (i + 4 < seats.length) audienceByType[seats[i + 4]] = true;
 
         var amount = 0;
-        for (var i = 0; i < used.length; i++) {
-          amount++;
+        for (var j = 0; j < audienceByType.length; j++) {
+          if (audienceByType[j]) amount++;
         }
 
         if (amount == 0) continue;
@@ -344,9 +309,9 @@ wss.on('connection', function connection(ws, req) {
   ws.on('message', handleMessage);
 
   if (state.laughs[ws.id] == undefined) {
-    state.laughs[ws.id] = 100000;
+    state.laughs[ws.id] = 3;
     state.inventories[ws.id] = [];
-    //addAudience(ws.id, 0, 3);
+    addAudience(ws.id, 0, 3);
   }
 
   ws.send(JSON.stringify({
@@ -358,12 +323,15 @@ wss.on('connection', function connection(ws, req) {
   id = id % state.MAX_PLAYERS;
 });
 
+let started = false;
 const stateInterval = setInterval(() => {
+  if (started) tick();
+
   for (var i = 0; i < state.MAX_PLAYERS; i++) {
     if (state.laughs[i] == undefined) return;
   }
 
-  tick();
+  started = true;
 }, 5000);
  
 const interval = setInterval(function ping() {

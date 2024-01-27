@@ -10,7 +10,7 @@
         </div>
 
         <span class="player bigtext">Not connected</span><br/>
-        <span class="laughs bigtext">0 laughs</span>
+        <span class="laughs bigtext">0 laughs, last gain: 0</span>
 
         <style>
             html, body {
@@ -48,6 +48,16 @@
                 position:fixed;
                 top:0;
                 right:0;
+            }
+
+            .amount {
+                position:absolute;
+                bottom:0;
+                left:0;
+                padding:3px;
+                display:block;
+                -webkit-text-stroke: 0px black;
+                background:#0000004d;
             }
         
             .cost {
@@ -128,16 +138,21 @@
         
             let state;
             let created = false;
+            let buying = false;
             let shopElements = [];
             let publicElements = [];
             let selectedMoneyInshop = 0;
+            let last_laughs = 0;
         
             webSocket.onmessage = (event) => {
+                last_laughs = ourLaughs();
+
                 var data = JSON.parse(event.data);
                 console.log(data);
                 ourid = data.id;
                 state = data.state;
                 selectedMoneyInshop = 0;
+                buying = false;
         
                 if (!created) {
                     createShop();
@@ -174,18 +189,30 @@
                     shopElements[k].className = state.shop[k].name;
                     shopElements[k].style.backgroundImage = `url("images/audiences/${state.shop[k].name}.png")`;
                     shopElements[k].addEventListener("click", (event) => {
+                        if (buying) return;
                         var slot = parseInt(event.target.slot);
                         webSocket.send(JSON.stringify({ buy: slot }));
                         selectedMoneyInshop += parseInt(state.shop[slot].cost);
                         state.shop[slot].buying = true;
+                        buying = true;
                         updateShop();
-                        updateMoney();
                     });
                 }
             }
+
+            function countAudienceType (socketid, type) {
+                var sum = 0;
+
+                for (var k = 0; k < state.inventories[socketid].length; k++) {
+                    if (state.inventories[socketid][k].type != type) continue;
+                    sum += state.inventories[socketid][k].amount;
+                }
+
+                return sum;
+            }
         
             function ourLaughs () {
-                return state.laughs[ourid] - selectedMoneyInshop || 0;
+                return (state && state.laughs && state.laughs[ourid] - selectedMoneyInshop) || 0;
             }
         
             function updatePlayer () {
@@ -194,10 +221,15 @@
         
             function updateShop () {
                 for (var k = 0; k < state.shop.length; k++) {
-                    shopElements[k].innerHTML = `${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} ${state.shop[k].amount} <span class="cost">${state.shop[k].cost}<span>`;
+                    var actualCost = state.shop[k].name == "Queer" ? Math.max(state.shop[k].cost - countAudienceType(ourid, k), state.QUEER_LOWEST_PRICE) : state.shop[k].cost;
+                    shopElements[k].innerHTML = `
+                        ${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")}
+                        <span class="amount">${state.shop[k].name == "Philosopher" || state.shop[k].name == "Elite" ? "" : state.shop[k].amount}</span>
+                        <span class="cost">${actualCost}<span>
+                    `;
                     shopElements[k].style.backgroundColor = state.shop[k].buying ? "gray" : state.shop[k].color;
-                    shopElements[k].disabled = state.shop[k].cost > ourLaughs() || state.shop[k].buying;
-                    shopElements[k].style.filter = state.shop[k].cost > ourLaughs() ? "grayscale(80%)" : "";
+                    shopElements[k].disabled = actualCost > ourLaughs() || state.shop[k].buying;
+                    shopElements[k].style.filter = actualCost > ourLaughs() ? "grayscale(80%)" : "";
                 }
             }
         
@@ -265,13 +297,13 @@
             function updatePublics () {
                 for (var j = 0; j < state.MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
                 updatePublic(ourid);
-                updatePublicSorted(playerIDLeft());
-                updatePublicSorted(playerIDRight());
-                updatePublicSorted(playerIDTop());
+                updatePublic(playerIDLeft());
+                updatePublic(playerIDRight());
+                updatePublic(playerIDTop());
             }
         
             function updateMoney () {
-                document.querySelector(".laughs").innerHTML = `${ourLaughs()} laughs`;
+                document.querySelector(".laughs").innerHTML = `${ourLaughs()} laughs, last gain: ${ourLaughs() - last_laughs}`;
             }
         </script>
     </body>
