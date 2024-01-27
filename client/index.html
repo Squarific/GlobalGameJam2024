@@ -10,7 +10,6 @@
 
 <span class="laughs bigtext">0 laughs</span>
 
-
 <style>
     .shop {
         display:block;
@@ -20,7 +19,7 @@
     }
     
     .shop button {
-        display:inline-block;
+        display:inline-flex;
         height:150px;
         width:150px;
         margin:10px;
@@ -28,6 +27,10 @@
         font-weight:bold;
         font-size:1.2em;
         vertical-align: top;
+        background-repeat: no-repeat;
+        background-size: contain;
+        align-items: start;
+        justify-content: center;
     }
 
     .shop-container {
@@ -35,7 +38,7 @@
         margin:auto;
     }
 
-    .shop button.normie {
+    .shop button.Normie {
         display:none;
     }
 
@@ -93,13 +96,11 @@
     const LEFT = 1;
     const RIGHT = 2;
     const TOP = 3;
-    const MAX_PLAYERS = 4;
 
     let state;
     let created = false;
     let shopElements = [];
     let publicElements = [];
-    let publicCount = 500;
     let selectedMoneyInshop = 0;
 
     webSocket.onmessage = (event) => {
@@ -122,16 +123,16 @@
     }
 
     function playerIDLeft () {
-        return (ourid + LEFT) % MAX_PLAYERS;
+        return (ourid + LEFT) % state.MAX_PLAYERS;
     }
 
     function playerIDRight () {
-        return (ourid + RIGHT) % MAX_PLAYERS;
+        return (ourid + RIGHT) % state.MAX_PLAYERS;
 
     }
 
     function playerIDTop () {
-        return (ourid + TOP) % MAX_PLAYERS;
+        return (ourid + TOP) % state.MAX_PLAYERS;
     }
 
     function createShop () {
@@ -142,6 +143,7 @@
             shopElements[k].style.backgroundColor = state.shop[k].color;
             shopElements[k].slot = k;
             shopElements[k].className = state.shop[k].name;
+            shopElements[k].style.backgroundImage = `url("images/${state.shop[k].name}.png")`;
             shopElements[k].addEventListener("click", (event) => {
                 var slot = parseInt(event.target.slot);
                 webSocket.send(JSON.stringify({ buy: slot }));
@@ -163,7 +165,7 @@
 
     function updateShop () {
         for (var k = 0; k < state.shop.length; k++) {
-            shopElements[k].innerHTML = `${state.shop[k].amount} ${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} <br/><br/> ${state.shop[k].cost}`;
+            shopElements[k].innerHTML = `${state.shop[k].amount} ${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} <br/> ${state.shop[k].cost}`;
             shopElements[k].style.backgroundColor = state.shop[k].buying ? "gray" : state.shop[k].color;
             shopElements[k].disabled = state.shop[k].cost > ourLaughs() || state.shop[k].buying;
             shopElements[k].style.filter = state.shop[k].cost > ourLaughs() ? "grayscale(80%)" : "";
@@ -176,9 +178,9 @@
         var public_container_top = document.querySelector(".public-top");
         var public_container_right = document.querySelector(".public-right");
 
-        for (var j = 0; j < MAX_PLAYERS; j++) publicElements.push([]);
+        for (var j = 0; j < state.MAX_PLAYERS; j++) publicElements.push([]);
 
-        for (var k = 0; k < publicCount; k++) {
+        for (var k = 0; k < state.MAX_AUDIENCE; k++) {
             publicElements[ourid][k] = public_container_our.appendChild(document.createElement("div"));
             publicElements[playerIDLeft()][k] = public_container_left.appendChild(document.createElement("div"));
             publicElements[playerIDRight()][k] = public_container_top.appendChild(document.createElement("div"));
@@ -188,24 +190,45 @@
 
     function updatePublic (playerid) {
         var sum = 0;
-        // Go trough the audience types
+
         for (var k = 0; k < state.inventories[playerid].length; k++) {
 
             // For every person in this audience type, set one of the blocks
-            for (var j = 0; j < state.inventories[playerid][k]; j++) {
+            for (var j = 0; j < state.inventories[playerid][k].amount; j++) {
                 if (sum >= publicElements[playerid].length) return;
-                publicElements[playerid][sum].style.backgroundColor = state.shop[k].color;
+                var audienceType = state.inventories[playerid][k].type;
+                publicElements[playerid][sum].style.backgroundColor = state.shop[audienceType].color;
+                sum++;
+            }
+        }
+    }
+
+    function updatePublicSorted (playerid) {
+        var sorted = [];
+        for (var k = 0; k < state.inventories[playerid].length; k++) {
+            sorted[state.inventories[playerid][k].type] = sorted[state.inventories[playerid][k].type] || 0;
+            sorted[state.inventories[playerid][k].type] += state.inventories[playerid][k].amount;
+        }
+
+        var sum = 0;
+        for (var audiencetype = 0; audiencetype < sorted.length; audiencetype++) {
+            sorted[audiencetype] = sorted[audiencetype] || 0;
+
+            // For every person in this audience type, set one of the blocks
+            for (var j = 0; j < sorted[audiencetype]; j++) {
+                if (sum >= publicElements[playerid].length) return;
+                publicElements[playerid][sum].style.backgroundColor = state.shop[audiencetype].color;
                 sum++;
             }
         }
     }
 
     function updatePublics () {
-        for (var j = 0; j < MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
+        for (var j = 0; j < state.MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
         updatePublic(ourid);
-        updatePublic(playerIDLeft());
-        updatePublic(playerIDRight());
-        updatePublic(playerIDTop());
+        updatePublicSorted(playerIDLeft());
+        updatePublicSorted(playerIDRight());
+        updatePublicSorted(playerIDTop());
     }
 
     function updateMoney () {

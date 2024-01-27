@@ -1,214 +1,278 @@
-<span class="player bigtext">Not connected</span>
+<html>
+    <head></head>
+    <body>
+        <div class="shop-container">
+            <div class="public public-left"></div>
+            <div class="public public-right"></div>
+            <div class="public public-top"></div>
+            <div class="shop"></div>
+            <div class="public public-our"></div>
+        </div>
 
-<div class="shop-container">
-    <div class="public public-left"></div>
-    <div class="public public-right"></div>
-    <div class="public public-top"></div>
-    <div class="shop"></div>
-    <div class="public public-our"></div>
-</div>
+        <span class="player bigtext">Not connected</span><br/>
+        <span class="laughs bigtext">0 laughs</span>
 
-<span class="laughs bigtext">0 laughs</span>
-
-
-<style>
-    .shop {
-        display:block;
-        width:510px;
-        background:lightblue;
-        margin-left:200px;
-    }
-    
-    .shop button {
-        display:inline-block;
-        height:150px;
-        width:150px;
-        margin:10px;
-        color:white;
-        font-weight:bold;
-        font-size:1.2em;
-        vertical-align: top;
-    }
-
-    .shop-container {
-        width:950px;
-        margin:auto;
-    }
-
-    .shop button.normie {
-        display:none;
-    }
-
-    .public {
-        width:500px;
-        margin-top:25px;
-        border:1px solid black;
-    }
-
-    .public-top {
-        margin-left:205px;
-    }
-
-    .public-our {
-        margin-left:205px;
-    }
-
-    .public-left {
-        position:fixed;
-        transform: translate(-115px, 310px) rotate(90deg)
-    }
-
-    .public-right {
-        position:fixed;
-        transform: translate(520px, 310px) rotate(-90deg)
-    }
-
-    .public-top {
-        margin-bottom:25px;
-    }
-
-    .public > div {
-        display:inline-block;
-        width:10px;
-        height:10px;
-    }
-
-    .bigtext {
-        display:block;
-        text-align: center;
-        font-weight:bold;
-        font-size:1.5em;
-        font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-        margin-top:1em;
-        margin-bottom:1em;
-    }
-</style>
-
-<script>
-    webSocket = new WebSocket("ws://localhost:8080");
-
-    webSocket.onerror = (event) => { console.log("error", event); }
-    webSocket.onopen = (event) => { console.log("open", event); }
-
-    const LEFT = 1;
-    const RIGHT = 2;
-    const TOP = 3;
-    const MAX_PLAYERS = 4;
-
-    let state;
-    let created = false;
-    let shopElements = [];
-    let publicElements = [];
-    let publicCount = 500;
-    let selectedMoneyInshop = 0;
-
-    webSocket.onmessage = (event) => {
-        var data = JSON.parse(event.data);
-        console.log(data);
-        ourid = data.id;
-        state = data.state;
-        selectedMoneyInshop = 0;
-
-        if (!created) {
-            createShop();
-            createPublics();
-            created = true;
-        }
-
-        updatePlayer();
-        updateShop();
-        updatePublics();
-        updateMoney();
-    }
-
-    function playerIDLeft () {
-        return (ourid + LEFT) % MAX_PLAYERS;
-    }
-
-    function playerIDRight () {
-        return (ourid + RIGHT) % MAX_PLAYERS;
-
-    }
-
-    function playerIDTop () {
-        return (ourid + TOP) % MAX_PLAYERS;
-    }
-
-    function createShop () {
-        var shop_container = document.querySelector(".shop");
-
-        for (var k = 0; k < state.shop.length; k++) {
-            shopElements[k] = shop_container.appendChild(document.createElement("button"));
-            shopElements[k].style.backgroundColor = state.shop[k].color;
-            shopElements[k].slot = k;
-            shopElements[k].className = state.shop[k].name;
-            shopElements[k].addEventListener("click", (event) => {
-                var slot = parseInt(event.target.slot);
-                webSocket.send(JSON.stringify({ buy: slot }));
-                selectedMoneyInshop += parseInt(state.shop[slot].cost);
-                state.shop[slot].buying = true;
-                updateShop();
-                updateMoney();
-            });
-        }
-    }
-
-    function ourLaughs () {
-        return state.laughs[ourid] - selectedMoneyInshop || 0;
-    }
-
-    function updatePlayer () {
-        document.querySelector(".player").innerHTML = `You are player ${ourid}`;
-    }
-
-    function updateShop () {
-        for (var k = 0; k < state.shop.length; k++) {
-            shopElements[k].innerHTML = `${state.shop[k].amount} ${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} <br/><br/> ${state.shop[k].cost}`;
-            shopElements[k].style.backgroundColor = state.shop[k].buying ? "gray" : state.shop[k].color;
-            shopElements[k].disabled = state.shop[k].cost > ourLaughs() || state.shop[k].buying;
-            shopElements[k].style.filter = state.shop[k].cost > ourLaughs() ? "grayscale(80%)" : "";
-        }
-    }
-
-    function createPublics () {
-        var public_container_our = document.querySelector(".public-our");
-        var public_container_left = document.querySelector(".public-left");
-        var public_container_top = document.querySelector(".public-top");
-        var public_container_right = document.querySelector(".public-right");
-
-        for (var j = 0; j < MAX_PLAYERS; j++) publicElements.push([]);
-
-        for (var k = 0; k < publicCount; k++) {
-            publicElements[ourid][k] = public_container_our.appendChild(document.createElement("div"));
-            publicElements[playerIDLeft()][k] = public_container_left.appendChild(document.createElement("div"));
-            publicElements[playerIDRight()][k] = public_container_top.appendChild(document.createElement("div"));
-            publicElements[playerIDTop()][k] = public_container_right.appendChild(document.createElement("div"));
-        }
-    }
-
-    function updatePublic (playerid) {
-        var sum = 0;
-        // Go trough the audience types
-        for (var k = 0; k < state.inventories[playerid].length; k++) {
-
-            // For every person in this audience type, set one of the blocks
-            for (var j = 0; j < state.inventories[playerid][k]; j++) {
-                if (sum >= publicElements[playerid].length) return;
-                publicElements[playerid][sum].style.backgroundColor = state.shop[k].color;
-                sum++;
+        <style>
+            html, body {
+                background: #292929;
+                color:white;
+                margin:0;
+                padding:0;
             }
-        }
-    }
 
-    function updatePublics () {
-        for (var j = 0; j < MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
-        updatePublic(ourid);
-        updatePublic(playerIDLeft());
-        updatePublic(playerIDRight());
-        updatePublic(playerIDTop());
-    }
+            .shop {
+                display:block;
+                width:510px;
+                background:lightblue;
+                margin-left:200px;
+            }
+            
+            .shop button {
+                position:relative;
+                display:inline-flex;
+                height:150px;
+                width:150px;
+                margin:10px;
+                color:white;
+                font-weight:bold;
+                font-size:1.6em;
+                vertical-align: top;
+                background-repeat: no-repeat;
+                background-size: contain;
+                align-items: start;
+                justify-content: center;
+                -webkit-text-stroke: 1px black;
+            }
 
-    function updateMoney () {
-        document.querySelector(".laughs").innerHTML = `${ourLaughs()} laughs`;
-    }
-</script>
+            .player {
+                position:fixed;
+                top:0;
+                right:0;
+            }
+        
+            .cost {
+                position:absolute;
+                right:0;
+                bottom:0;
+                padding:3px;
+                display:block;
+                color:yellow;
+                -webkit-text-stroke: 0px black;
+                background:#0000004d;
+            }
+        
+            .shop-container {
+                width:950px;
+                margin:auto;
+            }
+        
+            .shop button.Normie {
+                display:none;
+            }
+        
+            .public {
+                background:black;
+                width:500px;
+                margin-top:25px;
+                border:1px solid black;
+            }
+        
+            .public-top {
+                margin-left:205px;
+                transform:rotate(180deg);
+            }
+        
+            .public-our {
+                margin-left:205px;
+            }
+        
+            .public-left {
+                position:fixed;
+                transform: translate(-115px, 310px) rotate(90deg);
+            }
+        
+            .public-right {
+                position:fixed;
+                transform: translate(520px, 310px) rotate(-90deg);
+            }
+        
+            .public-top {
+                margin-bottom:25px;
+            }
+        
+            .public > div {
+                display:inline-block;
+                width:10px;
+                height:10px;
+            }
+        
+            .bigtext {
+                display:block;
+                text-align: center;
+                font-weight:bold;
+                font-size:1.5em;
+                font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+                margin:1em;
+            }
+        </style>
+        
+        <script>
+            webSocket = new WebSocket("ws://localhost:8080");
+        
+            webSocket.onerror = (event) => { console.log("error", event); }
+            webSocket.onopen = (event) => { console.log("open", event); }
+        
+            const LEFT = 1;
+            const RIGHT = 2;
+            const TOP = 3;
+        
+            let state;
+            let created = false;
+            let shopElements = [];
+            let publicElements = [];
+            let selectedMoneyInshop = 0;
+        
+            webSocket.onmessage = (event) => {
+                var data = JSON.parse(event.data);
+                console.log(data);
+                ourid = data.id;
+                state = data.state;
+                selectedMoneyInshop = 0;
+        
+                if (!created) {
+                    createShop();
+                    createPublics();
+                    created = true;
+                }
+        
+                updatePlayer();
+                updateShop();
+                updatePublics();
+                updateMoney();
+            }
+        
+            function playerIDLeft () {
+                return (ourid + LEFT) % state.MAX_PLAYERS;
+            }
+        
+            function playerIDRight () {
+                return (ourid + RIGHT) % state.MAX_PLAYERS;
+        
+            }
+        
+            function playerIDTop () {
+                return (ourid + TOP) % state.MAX_PLAYERS;
+            }
+        
+            function createShop () {
+                var shop_container = document.querySelector(".shop");
+        
+                for (var k = 0; k < state.shop.length; k++) {
+                    shopElements[k] = shop_container.appendChild(document.createElement("button"));
+                    shopElements[k].style.backgroundColor = state.shop[k].color;
+                    shopElements[k].slot = k;
+                    shopElements[k].className = state.shop[k].name;
+                    shopElements[k].style.backgroundImage = `url("images/audiences/${state.shop[k].name}.png")`;
+                    shopElements[k].addEventListener("click", (event) => {
+                        var slot = parseInt(event.target.slot);
+                        webSocket.send(JSON.stringify({ buy: slot }));
+                        selectedMoneyInshop += parseInt(state.shop[slot].cost);
+                        state.shop[slot].buying = true;
+                        updateShop();
+                        updateMoney();
+                    });
+                }
+            }
+        
+            function ourLaughs () {
+                return state.laughs[ourid] - selectedMoneyInshop || 0;
+            }
+        
+            function updatePlayer () {
+                document.querySelector(".player").innerHTML = `You are player ${ourid}`;
+            }
+        
+            function updateShop () {
+                for (var k = 0; k < state.shop.length; k++) {
+                    shopElements[k].innerHTML = `${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} ${state.shop[k].amount} <span class="cost">${state.shop[k].cost}<span>`;
+                    shopElements[k].style.backgroundColor = state.shop[k].buying ? "gray" : state.shop[k].color;
+                    shopElements[k].disabled = state.shop[k].cost > ourLaughs() || state.shop[k].buying;
+                    shopElements[k].style.filter = state.shop[k].cost > ourLaughs() ? "grayscale(80%)" : "";
+                }
+            }
+        
+            function createPublics () {
+                var public_container_our = document.querySelector(".public-our");
+                var public_container_left = document.querySelector(".public-left");
+                var public_container_top = document.querySelector(".public-top");
+                var public_container_right = document.querySelector(".public-right");
+        
+                for (var j = 0; j < state.MAX_PLAYERS; j++) publicElements.push([]);
+        
+                for (var k = 0; k < state.MAX_AUDIENCE; k++) {
+                    publicElements[ourid][k] = public_container_our.appendChild(document.createElement("div"));
+                    publicElements[playerIDLeft()][k] = public_container_left.appendChild(document.createElement("div"));
+                    publicElements[playerIDRight()][k] = public_container_top.appendChild(document.createElement("div"));
+                    publicElements[playerIDTop()][k] = public_container_right.appendChild(document.createElement("div"));
+                }
+            }
+        
+            function updatePublic (playerid) {
+                var sum = 0;
+        
+                for (var k = 0; k < state.inventories[playerid].length; k++) {
+        
+                    // For every person in this audience type, set one of the blocks
+                    for (var j = 0; j < state.inventories[playerid][k].amount; j++) {
+                        if (sum >= publicElements[playerid].length) return;
+                        var audienceType = state.inventories[playerid][k].type;
+                        publicElements[playerid][sum].style.backgroundColor = state.shop[audienceType].color;
+                        sum++;
+                    }
+                }
+        
+                // The rest should be reset
+                for (; sum < publicElements[playerid].length; sum++) {
+                    publicElements[playerid][sum].style.backgroundColor = "";
+                }
+            }
+        
+            function updatePublicSorted (playerid) {
+                var sorted = [];
+                for (var k = 0; k < state.inventories[playerid].length; k++) {
+                    sorted[state.inventories[playerid][k].type] = sorted[state.inventories[playerid][k].type] || 0;
+                    sorted[state.inventories[playerid][k].type] += state.inventories[playerid][k].amount;
+                }
+        
+                var sum = 0;
+                for (var audiencetype = 0; audiencetype < sorted.length; audiencetype++) {
+                    sorted[audiencetype] = sorted[audiencetype] || 0;
+        
+                    // For every person in this audience type, set one of the blocks
+                    for (var j = 0; j < sorted[audiencetype]; j++) {
+                        if (sum >= publicElements[playerid].length) return;
+                        publicElements[playerid][sum].style.backgroundColor = state.shop[audiencetype].color;
+                        sum++;
+                    }
+                }
+        
+                // The rest should be reset
+                for (; sum < publicElements[playerid].length; sum++) {
+                    publicElements[playerid][sum].style.backgroundColor = "";
+                }
+            }
+        
+            function updatePublics () {
+                for (var j = 0; j < state.MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
+                updatePublic(ourid);
+                updatePublicSorted(playerIDLeft());
+                updatePublicSorted(playerIDRight());
+                updatePublicSorted(playerIDTop());
+            }
+        
+            function updateMoney () {
+                document.querySelector(".laughs").innerHTML = `${ourLaughs()} laughs`;
+            }
+        </script>
+    </body>
+</html>
