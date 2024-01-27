@@ -1,5 +1,9 @@
+<span class="player bigtext">Not connected</span>
+
 <div class="shop">
 </div>
+
+<span class="laughs bigtext">0 laughs</span>
 
 <div class="public">
     
@@ -22,13 +26,16 @@
         font-weight:bold;
         font-size:1.2em;
         vertical-align: top;
-        filter: grayscale(80%);
+    }
+
+    .shop button.normie {
+        display:none;
     }
 
     .public {
         width:500px;
         margin:auto;
-        margin-top:100px;
+        margin-top:1em;
         border:1px solid black;
     }
 
@@ -37,6 +44,16 @@
         width:8px;
         height:8px;
         border:0px solid black;
+    }
+
+    .bigtext {
+        display:block;
+        text-align: center;
+        font-weight:bold;
+        font-size:1.5em;
+        font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        margin-top:1em;
+        margin-bottom:1em;
     }
 </style>
 
@@ -51,12 +68,14 @@
     let shopElements = [];
     let publicElements = [];
     let publicCount = 500;
+    let selectedMoneyInshop = 0;
 
     webSocket.onmessage = (event) => {
         var data = JSON.parse(event.data);
         console.log(data);
         ourid = data.id;
         state = data.state;
+        selectedMoneyInshop = 0;
 
         if (!created) {
             createShop();
@@ -64,8 +83,10 @@
             created = true;
         }
 
+        updatePlayer();
         updateShop();
         updatePublic();
+        updateMoney();
     }
 
     function createShop () {
@@ -75,17 +96,32 @@
             shopElements[k] = shop_container.appendChild(document.createElement("button"));
             shopElements[k].style.backgroundColor = state.shop[k].color;
             shopElements[k].slot = k;
+            shopElements[k].className = state.shop[k].name;
             shopElements[k].addEventListener("click", (event) => {
-                webSocket.send(JSON.stringify({ buy: parseInt(event.target.slot) }));
-                event.target.style.backgroundColor = "gray";
+                var slot = parseInt(event.target.slot);
+                webSocket.send(JSON.stringify({ buy: slot }));
+                selectedMoneyInshop += parseInt(state.shop[slot].cost);
+                state.shop[slot].buying = true;
+                updateShop();
+                updateMoney();
             });
         }
+    }
+
+    function ourLaughs () {
+        return state.laughs[ourid] - selectedMoneyInshop || 0;
+    }
+
+    function updatePlayer () {
+        document.querySelector(".player").innerHTML = `You are player ${ourid}`;
     }
 
     function updateShop () {
         for (var k = 0; k < state.shop.length; k++) {
             shopElements[k].innerHTML = `${state.shop[k].amount} ${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} <br/><br/> ${state.shop[k].cost}`;
-            shopElements[k].style.backgroundColor = state.shop[k].color;
+            shopElements[k].style.backgroundColor = state.shop[k].buying ? "gray" : state.shop[k].color;
+            shopElements[k].disabled = state.shop[k].cost > ourLaughs() || state.shop[k].buying;
+            shopElements[k].style.filter = state.shop[k].cost > ourLaughs() ? "grayscale(80%)" : "";
         }
     }
 
@@ -102,12 +138,18 @@
 
         if (!state.inventories[ourid]) return;
 
+        // Go trough the audience types
         for (var k = 0; k < state.inventories[ourid].length; k++) {
 
+            // For every person in this audience type, set one of the blocks
             for (var j = 0; j < state.inventories[ourid][k]; j++) {
                 publicElements[i].style.backgroundColor = state.shop[k].color;
                 i++;
             }
         }
+    }
+
+    function updateMoney () {
+        document.querySelector(".laughs").innerHTML = `${ourLaughs()} laughs`;
     }
 </script>

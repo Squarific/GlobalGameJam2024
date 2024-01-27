@@ -1,37 +1,42 @@
 const WebSocket = require('ws');
 
+var USER_COUNT = 4;
+
 // The key of this array it the shop slot that will be bought
 // The value is an array of all the socket ids that want to buy it this tick
-var buyRequests = [[], [], [], [], [], [], [], [], []];
+var buyRequests = [[], [], [], [], [], [], [], [], [], []];
 
 var state = {
   shop: [
+    { name: "normie", cost: 0, amount: 1, color: "gray" },
     { name: "oldie", cost: 1, amount: 1, color: "#cd4c6f" },
-    { name: "queer", cost: 2, amount: 1, color: "#cc4ccd" },
-    { name: "youngster", cost: 3, amount: 1, color: "#4c4fcd" },
-    { name: "punk", cost: 4, amount: 1, color: "#4cc0cd" },
-    { name: "stoner", cost: 5, amount: 1, color: "#4ccd6f" },
-    { name: "nerd", cost: 6, amount: 1, color: "#accd4c" },
-    { name: "jock", cost: 7, amount: 1, color: "#cdb84c" },
-    { name: "elite", cost: 8, amount: 1, color: "#cd834c" },
-    { name: "reviewer", cost: 9, amount: 1, color: "#cd4c4c" }
+    { name: "queer", cost: 3, amount: 1, color: "#cc4ccd" },
+    { name: "youngster", cost: 9, amount: 1, color: "#4c4fcd" },
+    { name: "punk", cost: 100, amount: 1, color: "#4cc0cd" },
+    { name: "stoner", cost: 300, amount: 1, color: "#4ccd6f" },
+    { name: "nerd", cost: 900, amount: 1, color: "#accd4c" },
+    { name: "jock", cost: 1000, amount: 1, color: "#cdb84c" },
+    { name: "elite", cost: 3000, amount: 1, color: "#cd834c" },
+    { name: "reviewer", cost: 9000, amount: 1, color: "#cd4c4c" }
   ],
-  inventories: []
+  inventories: [],
+  laughs: []
 };
 
 function addAudience (socketid, slot, amount) {
-  console.log("add audience", socketid, slot, amount)
   state.inventories[socketid] = state.inventories[socketid] || [];
   state.inventories[socketid][slot] = state.inventories[socketid][slot] || 0;
   state.inventories[socketid][slot] += amount;
 }
 
 function processBuyRequests () {
-  for (var k = 0; k < buyRequests.length; k++) {
+  for (var k = 1; k < buyRequests.length; k++) {
     if (buyRequests[k].length == 0) continue;
 
     for (var i = 0; i < buyRequests[k].length; i++) {
-      addAudience(buyRequests[k][i], k, Math.floor(state.shop[k].amount / buyRequests[k].length));
+      var socketid = buyRequests[k][i];
+      addAudience(socketid, k, Math.floor(state.shop[k].amount / buyRequests[k].length));
+      state.laughs[socketid] -= state.shop[k].cost;
     }
 
     state.shop[k].amount = 0;
@@ -39,12 +44,28 @@ function processBuyRequests () {
   }
 }
 
+function countAudience (socketid) {
+  var sum = 0;
+
+  state.inventories[socketid] = state.inventories[socketid] || [];
+
+  for (var k = 0; k < state.inventories[socketid].length; k++) {
+    sum += state.inventories[socketid][k] || 0;
+  }
+
+  return sum;
+}
+
 function tick () {
   processBuyRequests();
 
   state.shop.forEach((audience) => {
     audience.amount += 1;
-  })
+  });
+
+  wss.clients.forEach(function each(ws) {
+    state.laughs[ws.id] += Math.floor(countAudience(ws.id) / 3);
+  });
   
   wss.clients.forEach(function each(ws) {
     ws.send(JSON.stringify({
@@ -82,15 +103,21 @@ wss.on('connection', function connection(ws, req) {
   ws.isAlive = true;
   ws.ip = req.socket.remoteAddress;
   ws.id = id;
+
   console.log("Connection", ws.ip);
   ws.on('pong', heartbeat);
   ws.on('message', handleMessage);
+
+  state.laughs[ws.id] = 3;
+  state.inventories[ws.id] = [3];
+
   ws.send(JSON.stringify({
     id: ws.id,
     state: state
   }));
 
   id++;
+  id = id % USER_COUNT;
 });
 
 const stateInterval = setInterval(() => {
