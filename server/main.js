@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 
-var USER_COUNT = 4;
+var MAX_PLAYERS = 4;
 
 // The key of this array it the shop slot that will be bought
 // The value is an array of all the socket ids that want to buy it this tick
@@ -108,8 +108,10 @@ wss.on('connection', function connection(ws, req) {
   ws.on('pong', heartbeat);
   ws.on('message', handleMessage);
 
-  state.laughs[ws.id] = 3;
-  state.inventories[ws.id] = [3];
+  if (state.laughs[ws.id] == undefined) {
+    state.laughs[ws.id] = 3;
+    state.inventories[ws.id] = [3];
+  }
 
   ws.send(JSON.stringify({
     id: ws.id,
@@ -117,10 +119,14 @@ wss.on('connection', function connection(ws, req) {
   }));
 
   id++;
-  id = id % USER_COUNT;
+  id = id % MAX_PLAYERS;
 });
 
 const stateInterval = setInterval(() => {
+  for (var i = 0; i < MAX_PLAYERS; i++) {
+    if (state.laughs[i] == undefined) return;
+  }
+
   tick();
 }, 3000);
  
