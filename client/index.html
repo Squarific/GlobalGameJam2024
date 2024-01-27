@@ -1,8 +1,113 @@
+<div class="shop">
+</div>
+
+<div class="public">
+    
+</div>
+
+<style>
+    .shop {
+        display:block;
+        width:510px;
+        background:lightblue;
+        margin:auto;
+    }
+    
+    .shop button {
+        display:inline-block;
+        height:150px;
+        width:150px;
+        margin:10px;
+        color:white;
+        font-weight:bold;
+        font-size:1.2em;
+        vertical-align: top;
+        filter: grayscale(80%);
+    }
+
+    .public {
+        width:500px;
+        margin:auto;
+        margin-top:100px;
+        border:1px solid black;
+    }
+
+    .public > div {
+        display:inline-block;
+        width:8px;
+        height:8px;
+        border:0px solid black;
+    }
+</style>
+
 <script>
     webSocket = new WebSocket("ws://localhost:8080");
+
     webSocket.onerror = (event) => { console.log("error", event); }
-    webSocket.onopen = (event) => {
-        console.log("open", event);
-        webSocket.send("test");
+    webSocket.onopen = (event) => { console.log("open", event); }
+
+    let state;
+    let created = false;
+    let shopElements = [];
+    let publicElements = [];
+    let publicCount = 500;
+
+    webSocket.onmessage = (event) => {
+        var data = JSON.parse(event.data);
+        console.log(data);
+        ourid = data.id;
+        state = data.state;
+
+        if (!created) {
+            createShop();
+            createPublic();
+            created = true;
+        }
+
+        updateShop();
+        updatePublic();
+    }
+
+    function createShop () {
+        var shop_container = document.querySelector(".shop");
+
+        for (var k = 0; k < state.shop.length; k++) {
+            shopElements[k] = shop_container.appendChild(document.createElement("button"));
+            shopElements[k].style.backgroundColor = state.shop[k].color;
+            shopElements[k].slot = k;
+            shopElements[k].addEventListener("click", (event) => {
+                webSocket.send(JSON.stringify({ buy: parseInt(event.target.slot) }));
+                event.target.style.backgroundColor = "gray";
+            });
+        }
+    }
+
+    function updateShop () {
+        for (var k = 0; k < state.shop.length; k++) {
+            shopElements[k].innerHTML = `${state.shop[k].amount} ${state.shop[k].name + (state.shop[k].amount == 1 ? "" : "s")} <br/><br/> ${state.shop[k].cost}`;
+            shopElements[k].style.backgroundColor = state.shop[k].color;
+        }
+    }
+
+    function createPublic () {
+        var public_container = document.querySelector(".public");
+
+        for (var k = 0; k < publicCount; k++) {
+            publicElements[k] = public_container.appendChild(document.createElement("div"));
+        }
+    }
+
+    function updatePublic () {
+        var i = 0;
+
+        if (!state.inventories[ourid]) return;
+
+        for (var k = 0; k < state.inventories[ourid].length; k++) {
+
+            for (var j = 0; j < state.inventories[ourid][k]; j++) {
+                publicElements[i].style.backgroundColor = state.shop[k].color;
+                i++;
+            }
+        }
     }
 </script>
