@@ -98,7 +98,7 @@ function processBuyRequests () {
 
     for (var i = 0; i < buyRequests[audienceType].length; i++) {
       var socketid = buyRequests[audienceType][i];
-      var amountToAdd = Math.floor(state.shop[audienceType].amount / buyRequests[audienceType].length);
+      var amountToAdd = state.shop[audienceType].amount;
 
       if (audienceType == ELITE || audienceType == PHILOSOPHER) {
         amountToAdd = 1;
