@@ -43,7 +43,8 @@ var state = {
   ],
   inventories: [],
   laughs: [],
-  stages: []
+  stages: [],
+  gains: []
 };
 
 function addAudience (socketid, type, amount) {
@@ -187,12 +188,12 @@ function increaseShop () {
 }
 
 function giveIncome () {
-  wss.clients.forEach(function each(ws) {
-    var inventory = aggregatedAudience(ws.id);
+  for (var socketid = 0; socketid < state.inventories.length; socketid++) {
+    var inventory = aggregatedAudience(socketid);
     var standardIncome = inventory[NORMIE] + inventory[TIKTOKKER] + inventory[GAMER] + inventory[ARTIST] + inventory[JOCK] + inventory[PUNK] * state.LAUGHS_PER_PUNK + inventory[QUEER] + inventory[ELITE] + inventory[JOCKJR];
     standardIncome += Math.min(inventory[QUEER], inventory[ARTIST]);
-    state.laughs[ws.id] += Math.floor(standardIncome / 3);
-  });
+    state.laughs[socketid] += Math.floor(standardIncome / 3);
+  }
 }
 
 function sendState () {
