@@ -10,20 +10,24 @@
             <div class="public public-right">
                 <div class="pixels"></div>
             </div>
+
             <div class="public public-top">
                 <div class="pixels"></div>
             </div>
+
             <div class="shop"></div>
-
-            <span class="laughs bigtext">0😂 (+0)</span>
-            <div class="public public-our">
-                <div class="pixels"></div>
-                <button>+</button>
-            </div>
-
-            <div class="gains"></div>
-            <div class="specialgains"></div>
         </div>
+        
+        
+
+        <span class="laughs bigtext">0😂 (+0)</span>
+        <div class="public public-our">
+            <div class="pixels"></div>
+            <button>+</button>
+        </div>
+
+        <div class="gains"></div>
+        <div class="specialgains"></div>
 
         <span class="player bigtext">Not connected</span><br/>
 
@@ -52,6 +56,7 @@
                 color:white;
                 margin:0;
                 padding:0;
+                font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
             }
 
             .shop {
@@ -131,10 +136,15 @@
                 width:100px;
                 font-size:16px;
                 border:none;
+                text-wrap:nowrap;
             }
 
             .public > .pixels {
                 width:500px;
+            }
+            
+            .public-our > .pixels {
+                width:initial;
             }
         
             .public-top {
@@ -143,17 +153,16 @@
             }
         
             .public-our {
-                margin-left:155px;
-                width:600px;
+                width:100%;
             }
         
             .public-left {
-                position:fixed;
+                position:absolute;
                 transform: translate(-115px, 310px) rotate(90deg);
             }
         
             .public-right {
-                position:fixed;
+                position:absolute;
                 transform: translate(520px, 310px) rotate(-90deg);
             }
         
@@ -163,18 +172,24 @@
         
             .pixels > div {
                 display:inline-block;
-                width:10px;
-                height:10px;
-                background:black;
+                width:20px;
+                height:20px;
+            }
+
+            .public-our > .pixels > div {
+                display:inline-block;
+                width:40px;
+                height:40px;
+                background-size: contain;
+                vertical-align: top;
+                font-size:30px;
             }
 
             .pixel {
                 display:inline-block;
                 text-align:center;
-                background:black;
-                padding:8px;
-                padding-right:12px;
-                padding-left:12px;
+                background-size:cover;
+                background-position:center;
             }
 
             .smallpixel {
@@ -191,7 +206,6 @@
                 text-align: center;
                 font-weight:bold;
                 font-size:1.5em;
-                font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
                 margin:1em;
             }
             
@@ -212,6 +226,10 @@
                 display:flex;
                 justify-content:center;
                 align-items:center;
+                padding:8px;
+                padding-right:12px;
+                padding-left:12px;
+                background:#0000008d;
             }
 
             .specialgain {
@@ -406,6 +424,13 @@
                         if (sum >= publicElements[playerid].length) return;
                         var audienceType = state.inventories[playerid][k].type;
                         publicElements[playerid][sum].style.backgroundColor = state.shop[audienceType].color;
+                        publicElements[playerid][sum].style.backgroundImage = `url("images/audiences/${state.shop[audienceType].name}.png")`
+                        publicElements[playerid][sum].innerHTML = "";
+                        
+                        if (audienceType == 0) {
+                            publicElements[playerid][sum].innerHTML = "🧍";
+                        }
+
                         sum++;
                     }
                 }
@@ -413,6 +438,8 @@
                 // The rest should be reset
                 for (; sum < publicElements[playerid].length; sum++) {
                     publicElements[playerid][sum].style.backgroundColor = "";
+                    publicElements[playerid][sum].style.backgroundImage = "";
+                    publicElements[playerid][sum].innerHTML = "🪑";
                 }
             }
         
@@ -448,7 +475,7 @@
 
                 var buyMoreStateButton = document.querySelector(".public-our button");
                 buyMoreStateButton.disabled = ourLaughs() < state.stages[ourid].cost;
-                buyMoreStateButton.innerHTML = `+50 seats<br/>-${ state.stages[ourid].cost } laughs`;
+                buyMoreStateButton.innerHTML = `50 🪑<br/>-${ state.stages[ourid].cost } 😂`;
                 buyMoreStateButton.style.backgroundColor = ourLaughs() < state.stages[ourid].cost ? "gray" : "";
 
                 updatePublic(ourid);
@@ -492,8 +519,8 @@
                     }
 
                     gainsContainer.innerHTML += `
-                        <div class="pixel" style="background-color: ${state.shop[i].color};">
-                        <span class="gain">${aggregated[i]} 🧍 <br/><br/> ${actualGain} 😂</span></div>
+                        <div class="pixel" style="background-color: ${state.shop[i].color}; background-image: url('images/audiences/${state.shop[i].name}.png');">
+                        <span class="gain">${aggregated[i]} <br/><br/> ${actualGain} 😂</span></div>
                     `;
                 }
 
@@ -503,7 +530,7 @@
                         <span class="specialgain">
                         <div class="smallpixel" style="background-color: ${state.shop[ARTIST].color};"></div>
                         <div class="smallpixel" style="background-color: ${state.shop[QUEER].color};"></div>  
-                        ${Math.min(aggregated[ARTIST], aggregated[QUEER])} 🧍 ${Math.floor(Math.min(aggregated[ARTIST], aggregated[QUEER]) / 3)} 😂</span>
+                        ${Math.min(aggregated[ARTIST], aggregated[QUEER])}  ${Math.floor(Math.min(aggregated[ARTIST], aggregated[QUEER]) / 3)} 😂</span>
                     `;
 
                 specialgainsContainer.innerHTML += `
