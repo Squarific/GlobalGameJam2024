@@ -57,9 +57,6 @@
                 margin:0;
                 padding:0;
                 font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-                background-image:url('images/background.jpg');
-                background-size:cover;
-                background-position:center;
             }
 
             .shop {
@@ -67,6 +64,9 @@
                 width:510px;
                 background:lightblue;
                 margin-left:200px;
+                background-image:url('images/background.jpg');
+                background-size:cover;
+                background-position:center;
             }
             
             .shop button {
@@ -129,7 +129,6 @@
                 justify-content: space-between;
                 margin-top:25px;
                 width:500px;
-                border:1px solid black;
                 align-items:stretch;
             }
 
@@ -147,7 +146,7 @@
             }
             
             .public-our > .pixels {
-                width:initial;
+                width:1000px;
             }
         
             .public-top {
@@ -156,6 +155,9 @@
             }
         
             .public-our {
+                display:flex;
+                align-items: center;
+                justify-content: center;
                 width:99%;
             }
         
@@ -177,13 +179,15 @@
                 display:inline-block;
                 width:20px;
                 height:20px;
+                background-size: contain;
+                background-position:center;
+                background-repeat: no-repeat;
             }
 
             .public-our > .pixels > div {
                 display:inline-block;
                 width:40px;
                 height:40px;
-                background-size: contain;
                 vertical-align: top;
                 font-size:30px;
             }
@@ -429,10 +433,6 @@
                         publicElements[playerid][sum].style.backgroundColor = state.shop[audienceType].color;
                         publicElements[playerid][sum].style.backgroundImage = `url("images/audiences/${state.shop[audienceType].name}.png")`
                         publicElements[playerid][sum].innerHTML = "";
-                        
-                        if (audienceType == 0) {
-                            publicElements[playerid][sum].innerHTML = "🧍";
-                        }
 
                         sum++;
                     }
