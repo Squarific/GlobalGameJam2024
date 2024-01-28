@@ -369,7 +369,7 @@ wss.on('connection', function connection(ws, req) {
   ws.on('message', handleMessage);
 
   if (state.laughs[ws.id] == undefined) {
-    state.laughs[ws.id] = 10000;
+    state.laughs[ws.id] = 3;
     state.inventories[ws.id] = [];
     state.stages[ws.id] = { size: 50, cost: 5 };
     state.gains[ws.id] = {};
