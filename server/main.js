@@ -15,6 +15,7 @@ var PHILOSOPHER = 7;
 var ELITE = 8;
 var CRITIC = 9;
 var JOCKJR = 10;
+var gameWonById;
 
 const ELITE_CONVERSION = [{
   type: TIKTOKKER,
@@ -52,8 +53,27 @@ function addAudience (socketid, type, amount) {
     state.punks_bought += amount;
   }
 
+  if (type == CRITIC) {
+    gameWonBy(socketid);
+    clearInterval(stateInterval);
+  }
+
   state.inventories[socketid].push({ type, amount, boughtOnTick: state.currentTick });
   removeTooMuchAudience(socketid);
+}
+
+function gameWonBy (socketId) {
+  gameWonById = socketId;
+
+  wss.clients.forEach(function each(ws) {
+    ws.send(JSON.stringify({
+      gameWonBy: socketId
+    }));
+  });
+
+  setInterval(() => {
+    process.exit();
+  }, 2000);
 }
 
 function removeTooMuchAudience (socketid) {
@@ -197,12 +217,20 @@ function giveIncome () {
 }
 
 function sendState () {
+  var players = 4;
+
   wss.clients.forEach(function each(ws) {
+    if (ws.id >= 0) players--;
+
     ws.send(JSON.stringify({
+      gameWonBy: gameWonById,
       id: ws.id,
       state: state
     }));
   });
+
+  // No players left
+  if (players == 4) gameWonBy(0);
 }
 
 function jocks () {
@@ -307,6 +335,9 @@ function heartbeat() {
 
 function handleMessage (message) {
   var socket = this;
+
+  if (socket.id == -1) return;
+
   var parsed;
   try {
     parsed = JSON.parse(message);
@@ -334,12 +365,11 @@ wss.on('connection', function connection(ws, req) {
   ws.ip = req.socket.remoteAddress;
   ws.id = id;
 
-  console.log("Connection", ws.ip);
   ws.on('pong', heartbeat);
   ws.on('message', handleMessage);
 
   if (state.laughs[ws.id] == undefined) {
-    state.laughs[ws.id] = 3;
+    state.laughs[ws.id] = 10000;
     state.inventories[ws.id] = [];
     state.stages[ws.id] = { size: 50, cost: 5 };
     state.gains[ws.id] = {};
@@ -347,12 +377,14 @@ wss.on('connection', function connection(ws, req) {
   }
 
   ws.send(JSON.stringify({
+    gameWonBy: gameWonById,
     id: ws.id,
     state: state
   }));
 
+  if (id == -1) return;
   id++;
-  id = id % state.MAX_PLAYERS;
+  if (id >= state.MAX_PLAYERS) id = -1;
 });
 
 let started = false;

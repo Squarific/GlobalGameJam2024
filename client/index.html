@@ -25,7 +25,26 @@
 
         <span class="player bigtext">Not connected</span><br/>
 
+        <img class="winscreen endscreen0" onclick="location.reload()" src="images/endscreens/player0.png" />
+        <img class="winscreen endscreen1" onclick="location.reload()" src="images/endscreens/player1.png" />
+        <img class="winscreen endscreen2" onclick="location.reload()" src="images/endscreens/player2.png" />
+        <img class="winscreen endscreen3" onclick="location.reload()" src="images/endscreens/player3.png" />
+
         <style>
+            .blink_me {
+                animation: blinker 2s linear infinite;
+                color:#af0b3f;
+                font-size:2em;
+                background-color:#ffffff88;
+                padding:0.5em;
+            }
+
+            @keyframes blinker {
+                50% {
+                    opacity: 30%;
+                }
+            }
+
             html, body {
                 background: #292929;
                 color:white;
@@ -199,6 +218,14 @@
                 margin-top: 10px;
                 text-align:left;
             }
+
+            .winscreen {
+                display:none;
+                position:fixed;
+                top:50%;
+                left:50%;
+                transform: translate(-50%, -50%);
+            }
         </style>
         
         <script>
@@ -212,6 +239,7 @@
             const TOP = 3;
         
             let state;
+            let data;
             let created = false;
             let buying = false;
             let shopElements = [];
@@ -219,13 +247,23 @@
             let gainElements = [];
             let selectedMoneyInshop = 0;
             let last_laughs = 0;
+            let gameWonBy;
         
             webSocket.onmessage = (event) => {
-                last_laughs = ourLaughs();
+                if (typeof gameWonBy == "number") return;
 
-                var data = JSON.parse(event.data);
-                console.log(data);
+                last_laughs = ourLaughs();
+                data = JSON.parse(event.data);
+                
+                if (typeof data.gameWonBy == "number") {
+                    gameWonBy = data.gameWonBy;
+                    document.querySelector(".endscreen" + gameWonBy).style.display = "block";
+                    return;
+                }
+
                 ourid = data.id;
+                if (data.id == -1) ourid = 0;
+
                 state = data.state;
                 selectedMoneyInshop = 0;
                 buying = false;
@@ -315,7 +353,12 @@
             }
         
             function updatePlayer () {
-                document.querySelector(".player").innerHTML = `You are player ${ourid}`;
+                if (data.id == - 1) {
+                    document.querySelector(".player").innerHTML = `You are SPECTATING player ${ourid}`;
+                    document.querySelector(".player").classList.add("blink_me");
+                } else {
+                    document.querySelector(".player").innerHTML = `You are player ${ourid}`;
+                }
             }
         
             function updateShop () {
