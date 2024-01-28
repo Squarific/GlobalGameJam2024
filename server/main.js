@@ -14,7 +14,7 @@ var QUEER = 6;
 var PHILOSOPHER = 7;
 var ELITE = 8;
 var CRITIC = 9;
-var JOCKJR = 9;
+var JOCKJR = 10;
 
 const ELITE_CONVERSION = [{
   type: TIKTOKKER,
@@ -189,7 +189,7 @@ function increaseShop () {
 function giveIncome () {
   wss.clients.forEach(function each(ws) {
     var inventory = aggregatedAudience(ws.id);
-    var standardIncome = inventory[NORMIE] + inventory[TIKTOKKER] + inventory[GAMER] + inventory[ARTIST] + inventory[JOCK] + inventory[PUNK] * state.LAUGHS_PER_PUNK + inventory[QUEER] + inventory[ELITE];
+    var standardIncome = inventory[NORMIE] + inventory[TIKTOKKER] + inventory[GAMER] + inventory[ARTIST] + inventory[JOCK] + inventory[PUNK] * state.LAUGHS_PER_PUNK + inventory[QUEER] + inventory[ELITE] + inventory[JOCKJR];
     standardIncome += Math.min(inventory[QUEER], inventory[ARTIST]);
     state.laughs[ws.id] += Math.floor(standardIncome / 3);
   });
@@ -214,7 +214,7 @@ function jocks () {
     if (jockCount + jockJrCount + toAdd > MAX_FREE_JOCKS)
       toAdd = MAX_FREE_JOCKS - (jockCount + jockJrCount);
 
-    if (toAdd > 0) addAudience(socketid, JOCK, toAdd);
+    if (toAdd > 0) addAudience(socketid, JOCKJR, toAdd);
   }
 }
 
