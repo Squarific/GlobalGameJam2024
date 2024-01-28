@@ -57,6 +57,9 @@
                 margin:0;
                 padding:0;
                 font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+                background-image:url('images/background.jpg');
+                background-size:cover;
+                background-position:center;
             }
 
             .shop {
@@ -153,7 +156,7 @@
             }
         
             .public-our {
-                width:100%;
+                width:99%;
             }
         
             .public-left {
@@ -438,8 +441,7 @@
                 // The rest should be reset
                 for (; sum < publicElements[playerid].length; sum++) {
                     publicElements[playerid][sum].style.backgroundColor = "";
-                    publicElements[playerid][sum].style.backgroundImage = "";
-                    publicElements[playerid][sum].innerHTML = "🪑";
+                    publicElements[playerid][sum].style.backgroundImage = `url("images/audiences/chair.png")`;
                 }
             }
         
