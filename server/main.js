@@ -14,6 +14,7 @@ var QUEER = 6;
 var PHILOSOPHER = 7;
 var ELITE = 8;
 var CRITIC = 9;
+var JOCKJR = 9;
 
 const ELITE_CONVERSION = [{
   type: TIKTOKKER,
@@ -22,27 +23,27 @@ const ELITE_CONVERSION = [{
 
 var state = {
   MAX_PLAYERS: 4,
-  MAX_AUDIENCE: 400,
-  MAX_PUNKS: 500,
-  MAX_FREE_JOCKS: 200,
+  MAX_PUNKS: 100,
   QUEER_LOWEST_PRICE: 20,
-  LAUGHS_PER_PUNK: 3,
+  LAUGHS_PER_PUNK: 5,
   punks_bought: 0,
   currentTick: 0,
   shop: [
-    { name: "Normie",      cost: 0,    amount: 1, color: "gray"    },
-    { name: "Tiktokker",   cost: 1,    amount: 4, color: "#cd4c6f" },
-    { name: "Gamer",       cost: 3,    amount: 1, color: "#eb48ef" },
-    { name: "Artist",      cost: 9,    amount: 1, color: "#4c4fcd" },
-    { name: "Punk",        cost: 20,  amount: 1, color: "#4f4f4f" },
-    { name: "Jock",        cost: 20,  amount: 1, color: "#4ccd6f" },
-    { name: "Queer",       cost: 100,  amount: 1, color: "#4cc0cd" },
-    { name: "Philosopher", cost: 1000, amount: 1, color: "#521b65" },
-    { name: "Elite",       cost: 1000, amount: 1, color: "#cd834c" },
-    { name: "Critic",      cost: 9000, amount: 5, color: "#d3c749" }
+    { name: "Normie",      cost: 10000,    amount: 1, color: "gray"    },
+    { name: "Tiktokker",   cost: 1,        amount: 4, color: "#cd4c6f" },
+    { name: "Gamer",       cost: 3,        amount: 1, color: "#eb48ef" },
+    { name: "Artist",      cost: 9,        amount: 1, color: "#4c4fcd" },
+    { name: "Punk",        cost: 20,       amount: 1, color: "#4f4f4f" },
+    { name: "Jock",        cost: 20,       amount: 1, color: "#4ccd6f" },
+    { name: "Queer",       cost: 100,      amount: 1, color: "#4cc0cd" },
+    { name: "Philosopher", cost: 1000,     amount: 1, color: "#521b65" },
+    { name: "Elite",       cost: 1000,     amount: 1, color: "#cd834c" },
+    { name: "Critic",      cost: 9000,     amount: 5, color: "#d3c749" },
+    { name: "JockJr",      cost: 10000,    amount: 1, color: "#197b33" },
   ],
   inventories: [],
-  laughs: []
+  laughs: [],
+  stages: []
 };
 
 function addAudience (socketid, type, amount) {
@@ -58,7 +59,7 @@ function removeTooMuchAudience (socketid) {
   if (state.inventories[socketid].length == 0) return;
 
   var currentCount = countAudience(socketid);
-  var toRemove = Math.max(0, currentCount - state.MAX_AUDIENCE);
+  var toRemove = Math.max(0, currentCount - state.stages[socketid].size);
 
   for (var k = 0; k < state.inventories[socketid].length; k++) {
     if (state.inventories[socketid][k].amount > toRemove) {
@@ -174,7 +175,11 @@ function increaseShop () {
   state.shop[ARTIST].amount++;
   state.shop[QUEER].amount++;
   state.shop[JOCK].amount++;
-  state.shop[PUNK].amount++;
+
+  if (state.currentTick % 4 == 0) {
+    state.shop[PUNK].amount++;
+  }
+
   state.shop[PUNK].amount = Math.min(state.shop[PUNK].amount, state.MAX_PUNKS - state.punks_bought);
   state.shop[PHILOSOPHER].amount = 1;
   state.shop[ELITE].amount = 1;
@@ -200,12 +205,16 @@ function sendState () {
 }
 
 function jocks () {
-  if (state.currentTick % 5 == 0) {
-    for (var socketid = 0; socketid < state.inventories.length; socketid++) {
-      var toAdd = countAudienceType(socketid, JOCK);
-      if (toAdd + toAdd > state.MAX_FREE_JOCKS) toAdd = Math.max(state.MAX_FREE_JOCKS - toAdd, 0);
-      if (toAdd != 0) addAudience(socketid, JOCK, toAdd);
-    }
+  for (var socketid = 0; socketid < state.inventories.length; socketid++) {
+    var jockCount = countAudienceType(socketid, JOCK);
+    var jockJrCount = countAudienceType(socketid, JOCKJR);
+    var toAdd = Math.floor(jockCount / 5);
+    var MAX_FREE_JOCKS = Math.floor(state.stages[socketid].size / 2);
+
+    if (jockCount + jockJrCount + toAdd > MAX_FREE_JOCKS)
+      toAdd = MAX_FREE_JOCKS - (jockCount + jockJrCount);
+
+    if (toAdd > 0) addAudience(socketid, JOCK, toAdd);
   }
 }
 
@@ -263,6 +272,14 @@ function philosophers () {
   }
 }
 
+function buyMoreStage (socketid) {
+  if (state.laughs[socketid] >= state.stages[socketid].cost) {
+    state.stages[socketid].size += 50;
+    state.laughs[socketid] -= state.stages[socketid].cost;
+    state.stages[socketid].cost *= 3;
+  }
+}
+
 function tick () {
   processBuyRequests();
   increaseShop();
@@ -291,6 +308,10 @@ function handleMessage (message) {
   if (typeof parsed.buy == "number" && !isNaN(parsed.buy)) {
     buyRequests[parsed.buy].push(socket.id);
   }
+
+  if (parsed.buyMoreStage) {
+    buyMoreStage(socket.id);
+  }
 }
  
 const wss = new WebSocket.Server({
@@ -309,8 +330,9 @@ wss.on('connection', function connection(ws, req) {
   ws.on('message', handleMessage);
 
   if (state.laughs[ws.id] == undefined) {
-    state.laughs[ws.id] = 3;
+    state.laughs[ws.id] = 9000;
     state.inventories[ws.id] = [];
+    state.stages[ws.id] = { size: 50, cost: 5 };
     addAudience(ws.id, 0, 3);
   }
 

@@ -2,11 +2,20 @@
     <head></head>
     <body>
         <div class="shop-container">
-            <div class="public public-left"></div>
-            <div class="public public-right"></div>
-            <div class="public public-top"></div>
+            <div class="public public-left">
+                <div class="pixels"></div>
+            </div>
+            <div class="public public-right">
+                <div class="pixels"></div>
+            </div>
+            <div class="public public-top">
+                <div class="pixels"></div>
+            </div>
             <div class="shop"></div>
-            <div class="public public-our"></div>
+            <div class="public public-our">
+                <div class="pixels"></div>
+                <button>+</button>
+            </div>
         </div>
 
         <span class="player bigtext">Not connected</span><br/>
@@ -76,15 +85,31 @@
                 margin:auto;
             }
         
-            .shop button.Normie {
+            .shop button.Normie, .shop button.JockJr {
                 display:none;
             }
         
             .public {
-                background:black;
+                display: flex;
+                justify-content: space-between;
                 width:500px;
                 margin-top:25px;
                 border:1px solid black;
+                align-items:stretch;
+            }
+
+            .public button {
+                background:green;
+                color:white;
+                width:50px;
+                font-size:36px;
+                border:none;
+            }
+
+            .public > .pixels {
+                background:black;
+                width:500px;
+                height:10px;
             }
         
             .public-top {
@@ -178,6 +203,14 @@
             function playerIDTop () {
                 return (ourid + TOP) % state.MAX_PLAYERS;
             }
+
+            function playerIDToStageDirection (playerid) {
+                if (playerid == ourid) return "our";
+                if (playerid == playerIDLeft()) return "left";
+                if (playerid == playerIDRight()) return "right";
+                if (playerid == playerIDTop()) return "top";
+                throw "Unknown playerid " + playerid;
+            }
         
             function createShop () {
                 var shop_container = document.querySelector(".shop");
@@ -234,18 +267,17 @@
             }
         
             function createPublics () {
-                var public_container_our = document.querySelector(".public-our");
-                var public_container_left = document.querySelector(".public-left");
-                var public_container_top = document.querySelector(".public-top");
-                var public_container_right = document.querySelector(".public-right");
-        
-                for (var j = 0; j < state.MAX_PLAYERS; j++) publicElements.push([]);
-        
-                for (var k = 0; k < state.MAX_AUDIENCE; k++) {
-                    publicElements[ourid][k] = public_container_our.appendChild(document.createElement("div"));
-                    publicElements[playerIDLeft()][k] = public_container_left.appendChild(document.createElement("div"));
-                    publicElements[playerIDRight()][k] = public_container_top.appendChild(document.createElement("div"));
-                    publicElements[playerIDTop()][k] = public_container_right.appendChild(document.createElement("div"));
+                var buyMoreStateButton = document.querySelector(".public-our button");
+                buyMoreStateButton.addEventListener("click", () => {
+                    webSocket.send(JSON.stringify({ buyMoreStage: true }));
+                });
+            }
+
+            function ensureEnoughPublicElements (socketid) {
+                var target = document.querySelector(`.public-${playerIDToStageDirection(socketid)} .pixels`);
+
+                for (var i = publicElements[socketid].length; i < state.stages[socketid].size; i++) {
+                    publicElements[socketid][i] = target.appendChild(document.createElement("div"));
                 }
             }
         
@@ -253,6 +285,7 @@
                 var sum = 0;
         
                 for (var k = 0; k < state.inventories[playerid].length; k++) {
+                    ensureEnoughPublicElements(playerid);
         
                     // For every person in this audience type, set one of the blocks
                     for (var j = 0; j < state.inventories[playerid][k].amount; j++) {
@@ -270,6 +303,8 @@
             }
         
             function updatePublicSorted (playerid) {
+                ensureEnoughPublicElements(playerid);
+
                 var sorted = [];
                 for (var k = 0; k < state.inventories[playerid].length; k++) {
                     sorted[state.inventories[playerid][k].type] = sorted[state.inventories[playerid][k].type] || 0;
@@ -296,6 +331,11 @@
         
             function updatePublics () {
                 for (var j = 0; j < state.MAX_PLAYERS; j++) state.inventories[j] = state.inventories[j] || [];
+
+                var buyMoreStateButton = document.querySelector(".public-our button");
+                buyMoreStateButton.disabled = ourLaughs() < state.stages[ourid].cost;
+                buyMoreStateButton.innerHTML = `+ (${ state.stages[ourid].cost })`
+
                 updatePublic(ourid);
                 updatePublic(playerIDLeft());
                 updatePublic(playerIDRight());
