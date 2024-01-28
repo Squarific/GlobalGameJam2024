@@ -12,14 +12,18 @@
                 <div class="pixels"></div>
             </div>
             <div class="shop"></div>
+
+            <span class="laughs bigtext">0😂 (+0)</span>
             <div class="public public-our">
                 <div class="pixels"></div>
                 <button>+</button>
             </div>
+
+            <div class="gains"></div>
+            <div class="specialgains"></div>
         </div>
 
         <span class="player bigtext">Not connected</span><br/>
-        <span class="laughs bigtext">0 laughs, last gain: 0</span>
 
         <style>
             html, body {
@@ -64,9 +68,10 @@
                 bottom:0;
                 left:0;
                 padding:3px;
+                padding-right:9px;
                 display:block;
                 -webkit-text-stroke: 0px black;
-                background:#0000004d;
+                background:#0000008d;
             }
         
             .cost {
@@ -74,10 +79,11 @@
                 right:0;
                 bottom:0;
                 padding:3px;
+                padding-left:9px;
                 display:block;
                 color:yellow;
                 -webkit-text-stroke: 0px black;
-                background:#0000004d;
+                background:#0000008d;
             }
         
             .shop-container {
@@ -140,6 +146,24 @@
                 height:10px;
                 background:black;
             }
+
+            .pixel {
+                display:inline-block;
+                text-align:center;
+                background:black;
+                padding:8px;
+                padding-right:12px;
+                padding-left:12px;
+            }
+
+            .smallpixel {
+                display:inline-block;
+                text-align:center;
+                background:black;
+                width:20px;
+                height:20px;
+                margin-right:5px;
+            }
         
             .bigtext {
                 display:block;
@@ -148,6 +172,32 @@
                 font-size:1.5em;
                 font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
                 margin:1em;
+            }
+            
+            .gains {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-top:1em;
+            }
+
+            .specialgains {
+                text-align:center;
+                margin-top:1em;
+                font-size:24px;
+            }
+
+            .gain {
+                display:flex;
+                justify-content:center;
+                align-items:center;
+            }
+
+            .specialgain {
+                display:inline-block;
+                width:200px;
+                margin-top: 10px;
+                text-align:left;
             }
         </style>
         
@@ -166,6 +216,7 @@
             let buying = false;
             let shopElements = [];
             let publicElements = [];
+            let gainElements = [];
             let selectedMoneyInshop = 0;
             let last_laughs = 0;
         
@@ -189,6 +240,7 @@
                 updateShop();
                 updatePublics();
                 updateMoney();
+                updateGains();
             }
         
             function playerIDLeft () {
@@ -243,6 +295,20 @@
 
                 return sum;
             }
+
+            function aggregatedAudience (socketid) {
+                var summed = [];
+                for (var k = 0; k < state.shop.length; k++) {
+                    summed[k] = 0;
+                }
+
+                for (var k = 0; k < state.inventories[socketid].length; k++) {
+                    var entry = state.inventories[socketid][k];
+                    summed[entry.type] += entry.amount;
+                }
+
+                return summed;
+            }
         
             function ourLaughs () {
                 return (state && state.laughs && state.laughs[ourid] - selectedMoneyInshop) || 0;
@@ -257,8 +323,8 @@
                     var actualCost = state.shop[k].name == "Queer" ? Math.max(state.shop[k].cost - countAudienceType(ourid, k), state.QUEER_LOWEST_PRICE) : state.shop[k].cost;
                     shopElements[k].innerHTML = `
                         ${state.shop[k].name}
-                        <span class="amount">${state.shop[k].name == "Philosopher" || state.shop[k].name == "Elite" ? "" : state.shop[k].amount}</span>
-                        <span class="cost">${actualCost}<span>
+                        <span class="amount">${state.shop[k].name == "Philosopher" || state.shop[k].name == "Elite"  || state.shop[k].name == "Critic" ? "" : state.shop[k].amount + "🧍"}</span>
+                        <span class="cost">${actualCost}😂<span>
                     `;
                     shopElements[k].style.backgroundColor = state.shop[k].buying ? "gray" : state.shop[k].color;
                     shopElements[k].disabled = actualCost > ourLaughs() || state.shop[k].buying;
@@ -347,7 +413,61 @@
             }
         
             function updateMoney () {
-                document.querySelector(".laughs").innerHTML = `${ourLaughs()} laughs, last gain: ${ourLaughs() - last_laughs}`;
+                document.querySelector(".laughs").innerHTML = `${ourLaughs()}😂 (+${ourLaughs() - last_laughs}) `;
+            }
+
+            var NORMIE = 0;
+            var TIKTOKKER = 1;
+            var GAMER = 2;
+            var ARTIST = 3;
+            var PUNK = 4;
+            var JOCK = 5;
+            var QUEER = 6;
+            var PHILOSOPHER = 7;
+            var ELITE = 8;
+            var CRITIC = 9;
+            var JOCKJR = 10;
+
+            function updateGains () {
+                var gainsContainer = document.querySelector(".gains");
+                var aggregated = aggregatedAudience(ourid)
+                gainsContainer.innerHTML = "";
+
+                for (var i = 0; i < aggregated.length; i++) {
+                    var actualGain = Math.floor(aggregated[i] / 3);
+
+                    if (i == PUNK) {
+                        actualGain = Math.floor(aggregated[i] * state.LAUGHS_PER_PUNK / 3);
+                    } else if (i == PHILOSOPHER) {
+                        actualGain = state.gains[ourid].philosophers || 0;
+                    } else if (i == ELITE) {
+                        actualGain = state.gains[ourid].elites || 0;
+                    } else if (i == CRITIC) {
+                        actualGain = 0;
+                    }
+
+                    gainsContainer.innerHTML += `
+                        <div class="pixel" style="background-color: ${state.shop[i].color};">
+                        <span class="gain">${aggregated[i]} 🧍 <br/><br/> ${actualGain} 😂</span></div>
+                    `;
+                }
+
+                var specialgainsContainer = document.querySelector(".specialgains");
+                specialgainsContainer.innerHTML = "";
+                specialgainsContainer.innerHTML += `
+                        <span class="specialgain">
+                        <div class="smallpixel" style="background-color: ${state.shop[ARTIST].color};"></div>
+                        <div class="smallpixel" style="background-color: ${state.shop[QUEER].color};"></div>  
+                        ${Math.min(aggregated[ARTIST], aggregated[QUEER])} 🧍 ${Math.floor(Math.min(aggregated[ARTIST], aggregated[QUEER]) / 3)} 😂</span>
+                    `;
+
+                specialgainsContainer.innerHTML += `
+                        <br/>
+                        <span class="specialgain">
+                        <div class="smallpixel" style="background-color: ${state.shop[JOCK].color};"></div>
+                        <div class="smallpixel" style="background-color: ${state.shop[JOCKJR].color};"></div> 
+                        ${aggregated[JOCK] + aggregated[JOCKJR]} / ${((state.stages[ourid].size) || 0) / 2} 🧍</span>
+                    `;
             }
         </script>
     </body>

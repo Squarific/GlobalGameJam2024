@@ -25,7 +25,7 @@ var state = {
   MAX_PLAYERS: 4,
   MAX_PUNKS: 100,
   QUEER_LOWEST_PRICE: 20,
-  LAUGHS_PER_PUNK: 5,
+  LAUGHS_PER_PUNK: 9,
   punks_bought: 0,
   currentTick: 0,
   shop: [
@@ -38,7 +38,7 @@ var state = {
     { name: "Queer",       cost: 100,      amount: 1, color: "#4cc0cd" },
     { name: "Philosopher", cost: 1000,     amount: 1, color: "#521b65" },
     { name: "Elite",       cost: 1000,     amount: 1, color: "#cd834c" },
-    { name: "Critic",      cost: 9000,     amount: 5, color: "#d3c749" },
+    { name: "Critic",      cost: 9000,     amount: 1, color: "#d3c749" },
     { name: "JockJr",      cost: 10000,    amount: 1, color: "#197b33" },
   ],
   inventories: [],
@@ -222,15 +222,19 @@ function jocks () {
 function elites () {
   for (var socketid = 0; socketid < state.inventories.length; socketid++) {
     var toConvert = countAudienceType(socketid, ELITE);
+    var sum = 0;
 
     var i = 0;
     while (toConvert > 0 && i < ELITE_CONVERSION.length) {
       var amount = Math.min(toConvert, countAudienceType(socketid, ELITE_CONVERSION[i].type));
       toConvert -= amount;
       state.laughs[socketid] += amount * ELITE_CONVERSION[i].reward;
+      sum += amount * ELITE_CONVERSION[i].reward;
       removeAudience(socketid, ELITE_CONVERSION[i].type, amount);
       i++;
     }
+
+    state.gains[socketid].elites = sum;
   }
 }
 
@@ -249,6 +253,7 @@ function unmapInventory (socketid) {
 function philosophers () {
   for (var socketid = 0; socketid < state.inventories.length; socketid++) {
     var seats = unmapInventory(socketid);
+    var sum = 0;
     for (var i = 0; i < seats.length; i++) {
       if (seats[i] == PHILOSOPHER) {
         var audienceByType = [];
@@ -268,8 +273,11 @@ function philosophers () {
 
         if (amount == 0) continue;
         state.laughs[socketid] += Math.pow(2, amount - 1);
+        sum += Math.pow(2, amount - 1);
       }
     }
+
+    state.gains[socketid].philosophers = sum;
   }
 }
 
@@ -334,6 +342,7 @@ wss.on('connection', function connection(ws, req) {
     state.laughs[ws.id] = 9000;
     state.inventories[ws.id] = [];
     state.stages[ws.id] = { size: 50, cost: 5 };
+    state.gains[ws.id] = {};
     addAudience(ws.id, 0, 3);
   }
 
