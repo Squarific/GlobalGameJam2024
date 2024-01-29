@@ -191,27 +191,27 @@ function tiktokkers () {
 }
 
 function increaseShop () {
-  if (state.currentTick - state.shop[TIKTOKKER].lastlastBoughtOrIncreasedBought > 5)
+  if (state.currentTick - state.shop[TIKTOKKER].lastBoughtOrIncreased > 5 || state.shop[TIKTOKKER].amount == 0)
     state.shop[TIKTOKKER].amount += 4;
     state.shop[TIKTOKKER].lastBoughtOrIncreased = state.currentTick;
 
-  if (state.currentTick - state.shop[GAMER].lastBoughtOrIncreased > 5)
+  if (state.currentTick - state.shop[GAMER].lastBoughtOrIncreased > 5 || state.shop[GAMER].amount == 0)
     state.shop[GAMER].amount++;
     state.shop[GAMER].lastBoughtOrIncreased = state.currentTick;
 
-  if (state.currentTick - state.shop[ARTIST].lastBoughtOrIncreased > 5)
+  if (state.currentTick - state.shop[ARTIST].lastBoughtOrIncreased > 5 || state.shop[ARTIST].amount == 0)
     state.shop[ARTIST].amount++;
     state.shop[ARTIST].lastBoughtOrIncreased = state.currentTick;
 
-  if (state.currentTick - state.shop[QUEER].lastBoughtOrIncreased > 5)
+  if (state.currentTick - state.shop[QUEER].lastBoughtOrIncreased > 5 || state.shop[QUEER].amount == 0)
     state.shop[QUEER].amount++;
     state.shop[QUEER].lastBoughtOrIncreased = state.currentTick;
 
-  if (state.currentTick - state.shop[JOCK].lastBoughtOrIncreased > 5)
+  if (state.currentTick - state.shop[JOCK].lastBoughtOrIncreased > 5 || state.shop[JOCK].amount == 0)
     state.shop[JOCK].amount++;
     state.shop[JOCK].lastBoughtOrIncreased = state.currentTick;
 
-  if (state.currentTick - state.shop[PUNK].lastBoughtOrIncreased > 20) {
+  if (state.currentTick - state.shop[PUNK].lastBoughtOrIncreased > 20 || state.shop[PUNK].amount == 0) {
     state.shop[PUNK].amount++;
     state.shop[PUNK].lastBoughtOrIncreased = state.currentTick;
   }
