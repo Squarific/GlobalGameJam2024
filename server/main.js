@@ -30,17 +30,17 @@ var state = {
   punks_bought: 0,
   currentTick: 0,
   shop: [
-    { name: "Normie",      cost: 10000,    amount: 1, color: "gray"    },
-    { name: "Tiktokker",   cost: 1,        amount: 4, color: "#cd4c6f" },
-    { name: "Gamer",       cost: 3,        amount: 1, color: "#eb48ef" },
-    { name: "Artist",      cost: 9,        amount: 1, color: "#4c4fcd" },
-    { name: "Punk",        cost: 20,       amount: 1, color: "#4f4f4f" },
-    { name: "Jock",        cost: 20,       amount: 1, color: "#4ccd6f" },
-    { name: "Queer",       cost: 100,      amount: 1, color: "#4cc0cd" },
-    { name: "Philosopher", cost: 1000,     amount: 1, color: "#521b65" },
-    { name: "Elite",       cost: 1000,     amount: 1, color: "#cd834c" },
-    { name: "Critic",      cost: 9000,     amount: 1, color: "#d3c749" },
-    { name: "JockJr",      cost: 10000,    amount: 1, color: "#197b33" },
+    { name: "Normie",      cost: 10000,    amount: 1, color: "gray",    lastBoughtOrIncreased: 0},
+    { name: "Tiktokker",   cost: 1,        amount: 4, color: "#cd4c6f", lastBoughtOrIncreased: 0 },
+    { name: "Gamer",       cost: 3,        amount: 1, color: "#eb48ef", lastBoughtOrIncreased: 0 },
+    { name: "Artist",      cost: 9,        amount: 1, color: "#4c4fcd", lastBoughtOrIncreased: 0 },
+    { name: "Punk",        cost: 20,       amount: 1, color: "#4f4f4f", lastBoughtOrIncreased: 0 },
+    { name: "Jock",        cost: 20,       amount: 1, color: "#4ccd6f", lastBoughtOrIncreased: 0 },
+    { name: "Queer",       cost: 100,      amount: 1, color: "#4cc0cd", lastBoughtOrIncreased: 0 },
+    { name: "Philosopher", cost: 1000,     amount: 1, color: "#521b65", lastBoughtOrIncreased: 0 },
+    { name: "Elite",       cost: 1000,     amount: 1, color: "#cd834c", lastBoughtOrIncreased: 0 },
+    { name: "Critic",      cost: 9000,     amount: 1, color: "#d3c749", lastBoughtOrIncreased: 0 },
+    { name: "JockJr",      cost: 10000,    amount: 1, color: "#197b33", lastBoughtOrIncreased: 0 },
   ],
   inventories: [],
   laughs: [],
@@ -191,20 +191,35 @@ function tiktokkers () {
 }
 
 function increaseShop () {
-  state.shop[TIKTOKKER].amount += 4;
-  state.shop[GAMER].amount++;
-  state.shop[ARTIST].amount++;
-  state.shop[QUEER].amount++;
-  state.shop[JOCK].amount++;
+  if (state.currentTick - state.shop[TIKTOKKER].lastlastBoughtOrIncreasedBought > 5)
+    state.shop[TIKTOKKER].amount += 4;
+    state.shop[TIKTOKKER].lastBoughtOrIncreased = state.currentTick;
 
-  if (state.currentTick % 4 == 0) {
+  if (state.currentTick - state.shop[GAMER].lastBoughtOrIncreased > 5)
+    state.shop[GAMER].amount++;
+    state.shop[GAMER].lastBoughtOrIncreased = state.currentTick;
+
+  if (state.currentTick - state.shop[ARTIST].lastBoughtOrIncreased > 5)
+    state.shop[ARTIST].amount++;
+    state.shop[ARTIST].lastBoughtOrIncreased = state.currentTick;
+
+  if (state.currentTick - state.shop[QUEER].lastBoughtOrIncreased > 5)
+    state.shop[QUEER].amount++;
+    state.shop[QUEER].lastBoughtOrIncreased = state.currentTick;
+
+  if (state.currentTick - state.shop[JOCK].lastBoughtOrIncreased > 5)
+    state.shop[JOCK].amount++;
+    state.shop[JOCK].lastBoughtOrIncreased = state.currentTick;
+
+  if (state.currentTick - state.shop[PUNK].lastBoughtOrIncreased > 20) {
     state.shop[PUNK].amount++;
+    state.shop[PUNK].lastBoughtOrIncreased = state.currentTick;
   }
 
   state.shop[PUNK].amount = Math.min(state.shop[PUNK].amount, state.MAX_PUNKS - state.punks_bought);
   state.shop[PHILOSOPHER].amount = 1;
   state.shop[ELITE].amount = 1;
-  state.shop[CRITIC].amount = 5;
+  state.shop[CRITIC].amount = 1;
 }
 
 function giveIncome () {
@@ -311,7 +326,7 @@ function philosophers () {
 
 function buyMoreStage (socketid) {
   if (state.laughs[socketid] >= state.stages[socketid].cost) {
-    state.stages[socketid].size += 50;
+    state.stages[socketid].size += 25;
     state.laughs[socketid] -= state.stages[socketid].cost;
     state.stages[socketid].cost *= 3;
   }
@@ -371,7 +386,7 @@ wss.on('connection', function connection(ws, req) {
   if (state.laughs[ws.id] == undefined) {
     state.laughs[ws.id] = 3;
     state.inventories[ws.id] = [];
-    state.stages[ws.id] = { size: 50, cost: 5 };
+    state.stages[ws.id] = { size: 25, cost: 25 };
     state.gains[ws.id] = {};
     addAudience(ws.id, 0, 3);
   }

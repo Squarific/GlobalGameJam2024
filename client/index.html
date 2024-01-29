@@ -86,6 +86,14 @@
                 -webkit-text-stroke: 1px black;
             }
 
+            .public > button > span {
+                display:inline-block;
+                padding:3px;
+                font-weight:bold;
+                font-size:20px;
+                text-shadow: 1px 1px 5px #000000;
+            }
+
             .player {
                 position:fixed;
                 top:0;
@@ -135,10 +143,15 @@
             .public button {
                 background:green;
                 color:white;
-                width:100px;
+                width:75px;
+                height:75px;
                 font-size:16px;
                 border:none;
                 text-wrap:nowrap;
+                background-image: url(images/audiences/Chair.png);
+                background-size: contain;
+                background-position: center;
+                background-repeat: no-repeat;
             }
 
             .public > .pixels {
@@ -414,7 +427,7 @@
             function ensureEnoughPublicElements (socketid) {
                 var target = document.querySelector(`.public-${playerIDToStageDirection(socketid)} .pixels`);
                 publicElements[socketid] = publicElements[socketid] || [];
-                state.stages[socketid] = state.stages[socketid] || {size: 50, cost: 0 };
+                state.stages[socketid] = state.stages[socketid] || {size: 25, cost: 0 };
 
                 for (var i = publicElements[socketid].length; i < state.stages[socketid].size; i++) {
                     publicElements[socketid][i] = target.appendChild(document.createElement("div"));
@@ -477,7 +490,7 @@
 
                 var buyMoreStateButton = document.querySelector(".public-our button");
                 buyMoreStateButton.disabled = ourLaughs() < state.stages[ourid].cost;
-                buyMoreStateButton.innerHTML = `50 🪑<br/>-${ state.stages[ourid].cost } 😂`;
+                buyMoreStateButton.innerHTML = `<span>25</span> <br/><span>-${ state.stages[ourid].cost } 😂<span>`;
                 buyMoreStateButton.style.backgroundColor = ourLaughs() < state.stages[ourid].cost ? "gray" : "";
 
                 updatePublic(ourid);
