@@ -25,18 +25,18 @@ const ELITE_CONVERSION = [{
 var state = {
   MAX_PLAYERS: 4,
   MAX_PUNKS: 100,
-  QUEER_LOWEST_PRICE: 20,
+  QUEER_LOWEST_PRICE: 0,
   LAUGHS_PER_PUNK: 9,
   punks_bought: 0,
   currentTick: 0,
   shop: [
     { name: "Normie",      cost: 10000,    amount: 1, color: "gray",    lastBoughtOrIncreased: 0},
     { name: "Tiktokker",   cost: 1,        amount: 4, color: "#cd4c6f", lastBoughtOrIncreased: 0 },
-    { name: "Gamer",       cost: 3,        amount: 1, color: "#eb48ef", lastBoughtOrIncreased: 0 },
-    { name: "Artist",      cost: 9,        amount: 1, color: "#4c4fcd", lastBoughtOrIncreased: 0 },
+    { name: "Gamer",       cost: 1,        amount: 1, color: "#eb48ef", lastBoughtOrIncreased: 0 },
+    { name: "Artist",      cost: 3,        amount: 1, color: "#4c4fcd", lastBoughtOrIncreased: 0 },
     { name: "Punk",        cost: 20,       amount: 1, color: "#4f4f4f", lastBoughtOrIncreased: 0 },
     { name: "Jock",        cost: 20,       amount: 1, color: "#4ccd6f", lastBoughtOrIncreased: 0 },
-    { name: "Queer",       cost: 100,      amount: 1, color: "#4cc0cd", lastBoughtOrIncreased: 0 },
+    { name: "Queer",       cost: 20,       amount: 1, color: "#4cc0cd", lastBoughtOrIncreased: 0 },
     { name: "Philosopher", cost: 1000,     amount: 1, color: "#521b65", lastBoughtOrIncreased: 0 },
     { name: "Elite",       cost: 1000,     amount: 1, color: "#cd834c", lastBoughtOrIncreased: 0 },
     { name: "Critic",      cost: 9000,     amount: 1, color: "#d3c749", lastBoughtOrIncreased: 0 },
@@ -200,22 +200,22 @@ function increaseShop () {
     state.shop[GAMER].amount++;
     state.shop[GAMER].lastBoughtOrIncreased = state.currentTick;
   }
-  
+
   if (state.currentTick - state.shop[ARTIST].lastBoughtOrIncreased > 3 || state.shop[ARTIST].amount == 0) {
     state.shop[ARTIST].amount++;
     state.shop[ARTIST].lastBoughtOrIncreased = state.currentTick;
   }
-  
+
   if (state.currentTick - state.shop[QUEER].lastBoughtOrIncreased > 3 || state.shop[QUEER].amount == 0) {
     state.shop[QUEER].amount++;
     state.shop[QUEER].lastBoughtOrIncreased = state.currentTick;
   }
-  
+
   if (state.currentTick - state.shop[JOCK].lastBoughtOrIncreased > 3 || state.shop[JOCK].amount == 0) {
     state.shop[JOCK].amount++;
     state.shop[JOCK].lastBoughtOrIncreased = state.currentTick;
   }
-  
+
   if (state.currentTick - state.shop[PUNK].lastBoughtOrIncreased > 3 || state.shop[PUNK].amount == 0) {
     state.shop[PUNK].amount++;
     state.shop[PUNK].lastBoughtOrIncreased = state.currentTick;
