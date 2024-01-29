@@ -257,7 +257,7 @@ function jocks () {
   for (var socketid = 0; socketid < state.inventories.length; socketid++) {
     var jockCount = countAudienceType(socketid, JOCK);
     var jockJrCount = countAudienceType(socketid, JOCKJR);
-    var toAdd = Math.floor(jockCount / 5);
+    var toAdd = Math.floor(jockCount / 3);
     var MAX_FREE_JOCKS = Math.floor(state.stages[socketid].size / 2);
 
     if (jockCount + jockJrCount + toAdd > MAX_FREE_JOCKS)

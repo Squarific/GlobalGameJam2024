@@ -529,14 +529,26 @@
                         actualGain = state.gains[ourid].philosophers || 0;
                     } else if (i == ELITE) {
                         actualGain = state.gains[ourid].elites || 0;
-                    } else if (i == CRITIC) {
-                        actualGain = 0;
+                    } else if (i == CRITIC || i == JOCKJR || i == QUEER) {
+                        continue;
                     }
 
                     gainsContainer.innerHTML += `
                         <div class="pixel" style="background-color: ${state.shop[i].color}; background-image: url('images/audiences/${state.shop[i].name}.png');">
                         <span class="gain">${aggregated[i]} <br/><br/> ${actualGain} 😂</span></div>
                     `;
+
+                    if (i == JOCK) {
+                        gainsContainer.innerHTML += `
+                            <div class="pixel" style="background-color: ${state.shop[JOCKJR].color}; background-image: url('images/audiences/${state.shop[JOCKJR].name}.png');">
+                            <span class="gain">${aggregated[JOCKJR]} <br/><br/> ${Math.floor(aggregated[JOCKJR] / 3)} 😂</span></div>
+                        `;
+                    } else if (i == ARTIST) {
+                        gainsContainer.innerHTML += `
+                            <div class="pixel" style="background-color: ${state.shop[QUEER].color}; background-image: url('images/audiences/${state.shop[QUEER].name}.png');">
+                            <span class="gain">${aggregated[QUEER]} <br/><br/> ${Math.floor(aggregated[QUEER] / 3)} 😂</span></div>
+                        `;
+                    }
                 }
 
                 var specialgainsContainer = document.querySelector(".specialgains");
